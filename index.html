@@ -24,15 +24,15 @@
   <!-- GLOBAL HEADER NAVBAR -->
   <header class="global-navbar">
     <div class="nav-container">
-      <div class="nav-brand" onclick="navigateTo('discover')">
+      <div class="nav-brand" onclick="navigateTo('discover', event)">
         <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo">
       </div>
 
       <nav class="nav-menu">
-        <a href="#" class="nav-link active" id="nav-discover" onclick="navigateTo('discover')">Discover</a>
-        <a href="#" class="nav-link" id="nav-create" onclick="navigateTo('create')">Create</a>
-        <a href="#" class="nav-link" id="nav-services" onclick="navigateTo('services')">Services</a>
-        <a href="#" class="nav-link admin-nav-tag admin-only" id="nav-admin" onclick="navigateTo('admin')" style="display: none;"><i class="fa-solid fa-user-shield"></i> Admin Portal</a>
+        <a href="#" class="nav-link active" id="nav-discover" onclick="navigateTo('discover', event)">Discover</a>
+        <a href="#" class="nav-link" id="nav-create" onclick="navigateTo('create', event)">Create</a>
+        <a href="#" class="nav-link" id="nav-services" onclick="navigateTo('services', event)">Services</a>
+        <a href="#" class="nav-link admin-nav-tag admin-only" id="nav-admin" onclick="navigateTo('admin', event)" style="display: none;"><i class="fa-solid fa-user-shield"></i> Admin Portal</a>
       </nav>
 
       <div class="nav-actions">
@@ -84,19 +84,19 @@
               <div class="dropdown-role" id="dropdown-user-role"><span class="badge-tag verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span></div>
             </div>
             <hr>
-            <a href="#" class="dropdown-item" onclick="navigateTo('profile')"><i class="fa-regular fa-user"></i> My Profile & Trips</a>
-            <a href="#" class="dropdown-item" onclick="navigateTo('public-profile')"><i class="fa-solid fa-address-card"></i> Public Profile View</a>
-            <a href="#" class="dropdown-item" onclick="navigateTo('security')"><i class="fa-solid fa-key"></i> Security Settings</a>
-            <a href="#" class="dropdown-item admin-only" id="dropdown-admin-item" onclick="navigateTo('admin')" style="display: none;"><i class="fa-solid fa-chart-line"></i> Admin Console</a>
+            <a href="#" class="dropdown-item" onclick="navigateTo('profile', event)"><i class="fa-regular fa-user"></i> My Profile & Trips</a>
+            <a href="#" class="dropdown-item" onclick="navigateTo('public-profile', event)"><i class="fa-solid fa-address-card"></i> Public Profile View</a>
+            <a href="#" class="dropdown-item" onclick="navigateTo('security', event)"><i class="fa-solid fa-key"></i> Security Settings</a>
+            <a href="#" class="dropdown-item admin-only" id="dropdown-admin-item" onclick="navigateTo('admin', event)" style="display: none;"><i class="fa-solid fa-chart-line"></i> Admin Console</a>
             <!-- STRICT SECURITY RULE: Role switching hidden for regular users, admin-only -->
-            <a href="#" class="dropdown-item admin-only" id="dropdown-switch-role-item" onclick="toggleDemoRole()" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Switch Role (<strong id="current-role-label">User</strong>)</a>
+            <a href="#" class="dropdown-item admin-only" id="dropdown-switch-role-item" onclick="toggleDemoRole(event)" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Switch Role (<strong id="current-role-label">User</strong>)</a>
             <hr>
-            <a href="#" class="dropdown-item danger" onclick="showAuthModal('login')"><i class="fa-solid fa-right-from-bracket"></i> Switch Account / Logout</a>
+            <a href="#" class="dropdown-item danger" onclick="showAuthModal('login', event)"><i class="fa-solid fa-right-from-bracket"></i> Switch Account / Logout</a>
           </div>
         </div>
 
         <!-- Auth Toggle Button for Logged out mode -->
-        <button class="btn btn-outline btn-sm" id="auth-modal-btn" onclick="showAuthModal('login')">Sign In</button>
+        <button class="btn btn-outline btn-sm" id="nav-signin" onclick="showAuthModal('login', event)">Sign In</button>
       </div>
     </div>
   </header>

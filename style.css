@@ -968,3 +968,99 @@ h1, h2, h3, h4, h5, h6 {
 @media (min-width: 992px) {
   .container { padding: 0 30px; }
 }
+
+/* -------------------------------------------------------------------------- */
+/* VERTICAL DYNAMIC ROUTE LIST FOR DESTINATIONS & STOPS                        */
+/* -------------------------------------------------------------------------- */
+
+.route-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.route-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: white;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.route-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 1. Start / Main Destination (Full width, prominent styling) */
+.route-item.main-destination {
+  background: #f0fdf4;
+  border: 2px solid #22c55e;
+  width: 100%;
+}
+
+/* 2. Sub-destinations / Stops (Indented with margin-left: 20px) */
+.route-item.sub-destination {
+  margin-left: 20px;
+  background: #f8fafc;
+  border-left: 4px solid var(--color-cyan);
+}
+
+.route-item-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.route-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-uppercase: uppercase;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
+}
+
+.route-step-badge.start-badge {
+  background: #22c55e;
+  color: white;
+}
+
+.route-step-badge.stop-badge {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.route-location-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+}
+
+.btn-remove-stop {
+  background: #f1f5f9;
+  border: none;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.btn-remove-stop:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}

@@ -415,16 +415,15 @@
             </div>
           </div>
 
-          <!-- Destinations Input -->
+          <!-- Destinations Input & Vertical Route List -->
           <div class="form-group">
-            <label class="form-label" for="destinations-input">Destinations (Cities or Landmarks)</label>
+            <label class="form-label" for="destinations-input">Destinations & Route Stops</label>
             <div class="input-with-button">
-              <input type="text" class="form-control" id="destinations-input" placeholder="e.g. Kandy, Knuckles, Riverston">
-              <button type="button" class="btn btn-outline" onclick="addDestinationTag()"><i class="fa-solid fa-plus"></i></button>
+              <input type="text" class="form-control" id="destinations-input" placeholder="e.g. Kandy, Knuckles, Riverston" onkeydown="if(event.key==='Enter'){event.preventDefault();addDestinationTag();}">
+              <button type="button" class="btn btn-outline" onclick="addDestinationTag()"><i class="fa-solid fa-plus"></i> Add Stop</button>
             </div>
-            <div class="tags-row mt-2" id="destinations-tags-container">
-              <span class="badge-tag">Knuckles Range <i class="fa-solid fa-xmark" onclick="this.parentElement.remove()"></i></span>
-              <span class="badge-tag">Riverston Peak <i class="fa-solid fa-xmark" onclick="this.parentElement.remove()"></i></span>
+            <div class="route-list-container mt-3" id="destinations-route-container">
+              <!-- Dynamically Populated by script.js -->
             </div>
           </div>
 

@@ -200,6 +200,7 @@ let state = {
   searchQuery: "",
   activeView: "discover",
   selectedTripId: "WB-101",
+  createTripDestinations: ["Kandy", "Knuckles Range", "Riverston Peak"],
   drafts: [
     { title: "Untitled Trip to Iceland", date: "Last edited 2 days ago" }
   ],
@@ -245,6 +246,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupDateInputs();
   updateAuthUI();
   setupNavigationEventListeners();
+  renderDestinationsRouteList();
   await fetchApprovedTripsFromSupabase();
   renderTripGrid();
   renderServicesGrid();
@@ -719,17 +721,58 @@ function handleImagePreview(e) {
   }
 }
 
+function renderDestinationsRouteList() {
+  const container = document.getElementById("destinations-route-container");
+  if (!container) return;
+
+  if (!state.createTripDestinations || state.createTripDestinations.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 1rem; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: #fafafa; color: var(--text-muted); font-size: 0.85rem;">
+        <i class="fa-solid fa-route" style="font-size: 1.2rem; color: var(--color-cyan); margin-bottom: 0.35rem; display: block;"></i>
+        No destinations added yet. Enter a location above and click "Add Stop" to build your route.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = state.createTripDestinations.map((loc, idx) => {
+    const isMain = idx === 0;
+    const badgeText = isMain
+      ? '<i class="fa-solid fa-flag-checkered"></i> Start / Main Destination'
+      : `<i class="fa-solid fa-location-pin"></i> Stop ${idx}`;
+    const itemClass = isMain ? "route-item main-destination" : "route-item sub-destination";
+    const badgeClass = isMain ? "route-step-badge start-badge" : "route-step-badge stop-badge";
+
+    return `
+      <div class="${itemClass}">
+        <div class="route-item-content">
+          <span class="${badgeClass}">${badgeText}</span>
+          <span class="route-location-name">${loc}</span>
+        </div>
+        <button type="button" class="btn-remove-stop" onclick="removeDestination(${idx})" title="Remove ${loc}">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
 function addDestinationTag() {
   const input = document.getElementById("destinations-input");
+  if (!input) return;
   const val = input.value.trim();
   if (val) {
-    const container = document.getElementById("destinations-tags-container");
-    const span = document.createElement("span");
-    span.className = "badge-tag";
-    span.innerHTML = `${val} <i class="fa-solid fa-xmark" onclick="this.parentElement.remove()"></i>`;
-    container.appendChild(span);
+    if (!state.createTripDestinations) state.createTripDestinations = [];
+    state.createTripDestinations.push(val);
     input.value = "";
+    renderDestinationsRouteList();
   }
+}
+
+function removeDestination(index) {
+  if (!state.createTripDestinations) return;
+  state.createTripDestinations.splice(index, 1);
+  renderDestinationsRouteList();
 }
 
 function saveTripAsDraft() {
@@ -797,7 +840,7 @@ async function processPayment(e) {
         host: state.currentUser ? state.currentUser.name : "Alex Thorne",
         hostAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
         hostBio: "Verified Traveler & Host",
-        location: "Sri Lanka",
+        location: (state.createTripDestinations && state.createTripDestinations.length > 0) ? state.createTripDestinations.join(" → ") : "Sri Lanka",
         quotas: `${document.getElementById("male-quota-input").value || 2} Males, ${document.getElementById("female-quota-input").value || 2} Females`,
         vehicle: document.getElementById("vehicle-input").value || "SUV",
         description: document.getElementById("description-input").value || "Great trip planned.",
@@ -812,6 +855,8 @@ async function processPayment(e) {
       renderTripGrid();
       renderAdminTables();
       document.getElementById("create-trip-form").reset();
+      state.createTripDestinations = [];
+      renderDestinationsRouteList();
       
       alert(`Payment Successful! Your trip "${newTitle}" has been submitted to Supabase with status 'pending_approval'.\n\nIt will render on the live public feed as soon as an Administrator approves it in the Admin Panel.`);
       navigateTo("discover");

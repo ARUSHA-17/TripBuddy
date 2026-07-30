@@ -4,6 +4,8 @@
 
   <!-- Supabase JS Client Library -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Chart.js CDN Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +22,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="light-theme">
+
+  <!-- SITE ANNOUNCEMENT BANNER -->
+  <div id="site-announcement-banner" class="site-announcement-banner" style="display: none;">
+    <div class="container flex-between py-2">
+      <span class="announcement-content"><i class="fa-solid fa-bullhorn text-accent"></i> <strong id="announcement-banner-text">Welcome to TripBuddy! Connect & Explore.</strong></span>
+      <button onclick="dismissAnnouncementBanner()" class="close-banner-btn" title="Dismiss">&times;</button>
+    </div>
+  </div>
 
   <!-- GLOBAL HEADER NAVBAR -->
   <header class="global-navbar">
@@ -415,16 +425,15 @@
             </div>
           </div>
 
-          <!-- Destinations Input -->
+          <!-- Destinations Input & Vertical Route List -->
           <div class="form-group">
-            <label class="form-label" for="destinations-input">Destinations (Cities or Landmarks)</label>
+            <label class="form-label" for="destinations-input">Destinations & Route Stops</label>
             <div class="input-with-button">
-              <input type="text" class="form-control" id="destinations-input" placeholder="e.g. Kandy, Knuckles, Riverston">
-              <button type="button" class="btn btn-outline" onclick="addDestinationTag()"><i class="fa-solid fa-plus"></i></button>
+              <input type="text" class="form-control" id="destinations-input" placeholder="e.g. Kandy, Knuckles, Riverston" onkeydown="if(event.key==='Enter'){event.preventDefault();addDestinationTag();}">
+              <button type="button" class="btn btn-outline" onclick="addDestinationTag()"><i class="fa-solid fa-plus"></i> Add Stop</button>
             </div>
-            <div class="tags-row mt-2" id="destinations-tags-container">
-              <span class="badge-tag">Knuckles Range <i class="fa-solid fa-xmark" onclick="this.parentElement.remove()"></i></span>
-              <span class="badge-tag">Riverston Peak <i class="fa-solid fa-xmark" onclick="this.parentElement.remove()"></i></span>
+            <div class="route-list-container mt-3" id="destinations-route-container">
+              <!-- Dynamically Populated by script.js -->
             </div>
           </div>
 
@@ -853,30 +862,31 @@
     </section>
 
     <!-- 8. ADMIN MANAGEMENT CONSOLE VIEW -->
-    <section class="view-section" id="view-admin">
+    <section class="view-section" id="view-admin" style="display: none;">
       <div class="admin-wrapper">
         <!-- Admin Left Sidebar -->
         <aside class="admin-sidebar">
           <div class="admin-sidebar-header" onclick="navigateTo('discover')">
             <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo admin-logo">
-            <span class="admin-tag">ADMIN CONSOLE</span>
+            <span class="admin-tag">SUPER ADMIN CONSOLE</span>
           </div>
 
           <nav class="admin-sidebar-nav">
-            <a href="#" class="admin-nav-item active" id="adm-nav-dashboard" onclick="switchAdminTab('dashboard')"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
-            <a href="#" class="admin-nav-item" id="adm-nav-users" onclick="switchAdminTab('users')"><i class="fa-solid fa-users"></i> Users & Approvals</a>
-            <a href="#" class="admin-nav-item" id="adm-nav-trips" onclick="switchAdminTab('trips')"><i class="fa-solid fa-route"></i> Trip Moderation</a>
-            <a href="#" class="admin-nav-item" id="adm-nav-services" onclick="switchAdminTab('services')"><i class="fa-solid fa-briefcase"></i> Services</a>
-            <a href="#" class="admin-nav-item" id="adm-nav-finance" onclick="switchAdminTab('finance')"><i class="fa-solid fa-wallet"></i> Finance</a>
-            <a href="#" class="admin-nav-item" id="adm-nav-settings" onclick="switchAdminTab('settings')"><i class="fa-solid fa-gear"></i> Settings & Admins</a>
+            <a href="#" class="admin-nav-item active" id="adm-nav-dashboard" onclick="switchAdminTab('dashboard', event)"><i class="fa-solid fa-chart-line"></i> Analytics Overview</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-pending" onclick="switchAdminTab('pending', event)"><i class="fa-solid fa-clock-rotate-left"></i> Pending Approvals <span class="badge-tag warning-tag micro ml-auto" id="nav-pending-badge">0</span></a>
+            <a href="#" class="admin-nav-item" id="adm-nav-users" onclick="switchAdminTab('users', event)"><i class="fa-solid fa-users-gear"></i> Manage Users</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-trips" onclick="switchAdminTab('trips', event)"><i class="fa-solid fa-route"></i> Manage Trips</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-services" onclick="switchAdminTab('services', event)"><i class="fa-solid fa-briefcase"></i> Services</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-finance" onclick="switchAdminTab('finance', event)"><i class="fa-solid fa-wallet"></i> Finance</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-settings" onclick="switchAdminTab('settings', event)"><i class="fa-solid fa-sliders"></i> Site Settings & Admins</a>
           </nav>
 
           <div class="admin-sidebar-footer">
             <div class="admin-user-info">
               <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Admin">
               <div>
-                <strong>Primary Admin</strong>
-                <span class="text-muted micro d-block">System Overseer</span>
+                <strong id="sidebar-admin-name">Primary System Admin</strong>
+                <span class="text-muted micro d-block">Super Overseer</span>
               </div>
             </div>
           </div>
@@ -888,13 +898,11 @@
           <div class="admin-topbar">
             <div class="search-input-group">
               <i class="fa-solid fa-magnifying-glass search-icon"></i>
-              <input type="text" placeholder="Search by User ID, Trip ID, NIC..." class="admin-search-input">
+              <input type="text" id="admin-global-search" placeholder="Search across users, trips, NIC..." class="admin-search-input" onkeyup="handleAdminGlobalSearch()">
             </div>
             <div class="flex-align gap-3">
-              <i class="fa-regular fa-bell admin-icon-btn"></i>
               <div class="flex-align gap-2">
-                <span class="text-muted small">Admin Portal Active</span>
-                <i class="fa-solid fa-circle-user text-accent"></i>
+                <span class="badge-tag confirmed-tag micro"><i class="fa-solid fa-shield-halved"></i> Super Admin Mode</span>
               </div>
             </div>
           </div>
@@ -903,108 +911,143 @@
           <div class="admin-page-content active" id="adm-page-dashboard">
             <div class="flex-between mb-4">
               <div>
-                <h2>Executive Overview</h2>
-                <p class="text-muted">System performance and growth metrics for your platform.</p>
+                <h2>Visual Analytics & Platform Overview</h2>
+                <p class="text-muted">Real-time stats and growth charts for users, trips, and approvals.</p>
               </div>
-              <button class="btn btn-primary" onclick="alert('Exporting PDF Analytics report...')"><i class="fa-solid fa-download"></i> Export PDF Report</button>
+              <button class="btn btn-primary" onclick="showToast('PDF Analytics Report exported successfully!', 'success')"><i class="fa-solid fa-download"></i> Export PDF Report</button>
             </div>
 
-            <!-- Stat Cards 4 Across -->
+            <!-- Top Summary Cards 4 Across -->
             <div class="grid-4 mb-4">
               <div class="stat-card-admin">
                 <div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div>
                 <div class="stat-body">
-                  <span class="stat-title">Active Users</span>
-                  <div class="stat-value">12,450</div>
-                  <span class="badge-stat success">+12.4% vs prev 30d</span>
+                  <span class="stat-title">Total Registered Users</span>
+                  <div class="stat-value" id="admin-stat-total-users">12,450</div>
+                  <span class="badge-stat success"><i class="fa-solid fa-user-check"></i> Live Database</span>
                 </div>
               </div>
               <div class="stat-card-admin">
-                <div class="stat-icon orange"><i class="fa-solid fa-user-clock"></i></div>
+                <div class="stat-icon orange"><i class="fa-solid fa-clock-rotate-left"></i></div>
                 <div class="stat-body">
-                  <span class="stat-title">Pending Users</span>
-                  <div class="stat-value">2</div>
-                  <span class="badge-stat warning">Awaiting Review</span>
-                </div>
-              </div>
-              <div class="stat-card-admin">
-                <div class="stat-icon blue"><i class="fa-solid fa-clock"></i></div>
-                <div class="stat-body">
-                  <span class="stat-title">Pending Trips</span>
-                  <div class="stat-value" id="admin-dash-pending-trips">1</div>
-                  <span class="badge-stat info">Approval Workflow</span>
+                  <span class="stat-title">Pending Approvals</span>
+                  <div class="stat-value" id="admin-stat-pending-approvals">3</div>
+                  <span class="badge-stat warning"><i class="fa-solid fa-triangle-exclamation"></i> Action Required</span>
                 </div>
               </div>
               <div class="stat-card-admin">
                 <div class="stat-icon green"><i class="fa-solid fa-compass"></i></div>
                 <div class="stat-body">
                   <span class="stat-title">Active Trips</span>
-                  <div class="stat-value">6</div>
-                  <span class="badge-stat success">Verified Live</span>
+                  <div class="stat-value" id="admin-stat-active-trips">6</div>
+                  <span class="badge-stat success"><i class="fa-solid fa-check"></i> Published Live</span>
+                </div>
+              </div>
+              <div class="stat-card-admin">
+                <div class="stat-icon blue"><i class="fa-solid fa-flag-checkered"></i></div>
+                <div class="stat-body">
+                  <span class="stat-title">Completed Trips</span>
+                  <div class="stat-value" id="admin-stat-completed-trips">18</div>
+                  <span class="badge-stat info"><i class="fa-solid fa-circle-check"></i> Concluded</span>
                 </div>
               </div>
             </div>
 
-            <!-- Graph + Distribution Grid -->
+            <!-- Graph + Distribution Grid (Using Chart.js) -->
             <div class="grid-2-custom mb-4">
               <div class="card">
                 <div class="flex-between mb-3">
-                  <h3>Revenue & Posting Growth</h3>
-                  <div class="btn-group-sm">
-                    <button class="btn btn-outline btn-sm active">Daily</button>
-                    <button class="btn btn-outline btn-sm">Weekly</button>
+                  <div>
+                    <h3>Monthly Registrations & Submissions</h3>
+                    <p class="text-muted small mb-0">Platform activity trends over recent months</p>
                   </div>
                 </div>
-                <div class="chart-container">
-                  <svg viewBox="0 0 500 150" class="svg-chart">
-                    <path d="M10,120 Q80,40 150,90 T300,50 T450,20" fill="none" stroke="#00F5D4" stroke-width="4"/>
-                    <circle cx="450" cy="20" r="6" fill="#00F5D4"/>
-                  </svg>
-                  <div class="chart-labels">
-                    <span>01 MAY</span><span>08 MAY</span><span>15 MAY</span><span>22 MAY</span><span>30 MAY</span>
-                  </div>
+                <div class="chart-box">
+                  <canvas id="userRegistrationChart" height="230"></canvas>
                 </div>
               </div>
 
               <div class="card">
-                <h3>Top Destinations Distribution</h3>
-                <div class="progress-bar-list mt-3">
-                  <div class="bar-item">
-                    <div class="flex-between small"><span>Ella, Sri Lanka</span><strong>42%</strong></div>
-                    <div class="progress-bar-track"><div class="progress-bar-fill" style="width: 42%;"></div></div>
+                <div class="flex-between mb-3">
+                  <div>
+                    <h3>Trips Breakdown by Category</h3>
+                    <p class="text-muted small mb-0">Distribution of posted adventure categories</p>
                   </div>
-                  <div class="bar-item mt-2">
-                    <div class="flex-between small"><span>Sigiriya, Sri Lanka</span><strong>28%</strong></div>
-                    <div class="progress-bar-track"><div class="progress-bar-fill" style="width: 28%;"></div></div>
-                  </div>
+                </div>
+                <div class="chart-box">
+                  <canvas id="tripCategoryChart" height="230"></canvas>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- ADMIN TAB 2: USER MANAGEMENT & PENDING APPROVALS -->
-          <div class="admin-page-content" id="adm-page-users">
-            <div class="flex-between mb-4">
+          <!-- ADMIN TAB 2: PENDING APPROVAL REQUESTS -->
+          <div class="admin-page-content" id="adm-page-pending">
+            <div class="flex-between mb-4 flex-wrap gap-3">
               <div>
-                <h2>User Management & Verification</h2>
-                <p class="text-muted">Review pending user registrations and manage live accounts.</p>
+                <h2>Pending Approvals Queue</h2>
+                <p class="text-muted">Review pending user registration requests and trip post submissions.</p>
               </div>
               <div class="flex-align gap-2">
-                <button class="btn btn-primary" onclick="alert('Add New User modal opened')"><i class="fa-solid fa-user-plus"></i> Add User</button>
+                <div class="search-input-group">
+                  <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                  <input type="text" id="pending-search-input" placeholder="Filter pending items..." class="admin-search-input" onkeyup="renderPendingApprovalsTable()">
+                </div>
+                <select id="pending-type-filter" class="form-control form-control-sm" style="width: 160px;" onchange="renderPendingApprovalsTable()">
+                  <option value="all">All Pending Types</option>
+                  <option value="user">User Registrations</option>
+                  <option value="trip">Trip Submissions</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>REQUEST TYPE</th><th>SUBJECT / TITLE</th><th>DETAILS / CONTACT</th><th>DATE / LOCATION</th><th>ACTION BUTTONS</th></tr>
+                  </thead>
+                  <tbody id="admin-pending-tbody">
+                    <!-- Dynamic rendering by script.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN TAB 3: USER MANAGEMENT -->
+          <div class="admin-page-content" id="adm-page-users">
+            <div class="flex-between mb-4 flex-wrap gap-3">
+              <div>
+                <h2>User Management & Account Controls</h2>
+                <p class="text-muted">Manage all registered accounts, update user roles, toggle account suspension, or delete users.</p>
+              </div>
+              <div class="flex-align gap-2">
+                <div class="search-input-group">
+                  <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                  <input type="text" id="users-search-input" placeholder="Search user name, email..." class="admin-search-input" onkeyup="renderAdminUsersTable()">
+                </div>
+                <select id="users-role-filter" class="form-control form-control-sm" style="width: 150px;" onchange="renderAdminUsersTable()">
+                  <option value="all">All Roles</option>
+                  <option value="user">Travelers (User)</option>
+                  <option value="admin">Administrators</option>
+                </select>
               </div>
             </div>
 
             <!-- Filter Tabs -->
             <div class="admin-filter-tabs mb-3">
-              <button class="adm-tab active" onclick="filterAdminUsers('all', this)">All Accounts</button>
-              <button class="adm-tab" onclick="filterAdminUsers('pending', this)">Pending Approvals</button>
+              <button class="adm-tab active" onclick="filterAdminUserTab('all', this)">All Accounts</button>
+              <button class="adm-tab" onclick="filterAdminUserTab('approved', this)">Active Users</button>
+              <button class="adm-tab" onclick="filterAdminUserTab('suspended', this)">Suspended</button>
+              <button class="adm-tab" onclick="filterAdminUserTab('pending_approval', this)">Pending Review</button>
             </div>
 
             <div class="card">
               <div class="table-responsive">
                 <table class="data-table">
                   <thead>
-                    <tr><th>NAME</th><th>DOB</th><th>PHONE</th><th>STATUS</th><th>ACTIONS</th></tr>
+                    <tr><th>USER NAME & EMAIL</th><th>ROLE & STATUS</th><th>CONTACT / DOB</th><th>ACTIONS & ROLE CONTROLS</th></tr>
                   </thead>
                   <tbody id="admin-users-tbody">
                     <!-- Populated by script.js -->
@@ -1014,16 +1057,26 @@
             </div>
           </div>
 
-          <!-- ADMIN TAB 3: TRIP MODERATION (PENDING APPROVAL WORKFLOW) -->
+          <!-- ADMIN TAB 4: TRIP MODERATION & CONTENT CONTROL -->
           <div class="admin-page-content" id="adm-page-trips">
-            <div class="flex-between mb-4">
+            <div class="flex-between mb-4 flex-wrap gap-3">
               <div>
-                <h2>Trip Moderation & Approval Workflow</h2>
-                <p class="text-muted">Review pending trip posts before rendering them live on the public feed.</p>
+                <h2>Trip Content & Moderation Control</h2>
+                <p class="text-muted">Edit trip details, force-feature curated trips on the homepage, or remove inappropriate posts.</p>
               </div>
               <div class="flex-align gap-2">
-                <div class="badge-tag warning-tag p-2" id="admin-pending-trips-count">Pending: 0</div>
-                <div class="badge-tag success-tag p-2">Active: 6</div>
+                <div class="search-input-group">
+                  <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                  <input type="text" id="trips-search-input" placeholder="Search by ID, title, host..." class="admin-search-input" onkeyup="renderAdminTripsTable()">
+                </div>
+                <select id="trips-category-filter" class="form-control form-control-sm" style="width: 150px;" onchange="renderAdminTripsTable()">
+                  <option value="all">All Categories</option>
+                  <option value="Adventure">Adventure</option>
+                  <option value="Beach">Beach</option>
+                  <option value="Mountain">Mountain</option>
+                  <option value="Cultural">Cultural</option>
+                  <option value="Road trip">Road trip</option>
+                </select>
               </div>
             </div>
 
@@ -1031,7 +1084,7 @@
               <div class="table-responsive">
                 <table class="data-table">
                   <thead>
-                    <tr><th>TRIP ID</th><th>HOST</th><th>TITLE</th><th>QUOTAS</th><th>BUDGET</th><th>MODERATION WORKFLOW</th></tr>
+                    <tr><th>TRIP ID & COVER</th><th>TITLE & CATEGORY</th><th>HOST</th><th>PRICE & QUOTAS</th><th>STATUS</th><th>ACTIONS & CONTROLS</th></tr>
                   </thead>
                   <tbody id="admin-trips-tbody">
                     <!-- Populated by script.js -->
@@ -1039,24 +1092,16 @@
                 </table>
               </div>
             </div>
-
-            <div class="card blue-card">
-              <h3><i class="fa-solid fa-gavel"></i> Verification Rules</h3>
-              <ul>
-                <li>New trip posts remain in <code>pending_approval</code> status until explicitly approved here.</li>
-                <li>Once approved, the trip post is instantly rendered on the live public feed.</li>
-              </ul>
-            </div>
           </div>
 
-          <!-- ADMIN TAB 4: SERVICE PROVIDER MANAGEMENT -->
+          <!-- ADMIN TAB 5: SERVICE PROVIDER MANAGEMENT -->
           <div class="admin-page-content" id="adm-page-services">
             <div class="flex-between mb-4">
               <div>
                 <h2>Service Provider Directory Management</h2>
                 <p class="text-muted">Manage tour guides, operators, and third-party vehicle vendors.</p>
               </div>
-              <button class="btn btn-primary" onclick="alert('Add New Service Provider Modal opened.')">+ Add Provider</button>
+              <button class="btn btn-primary" onclick="showToast('Add New Service Provider form opened.', 'info')">+ Add Provider</button>
             </div>
 
             <div class="card mb-4">
@@ -1071,14 +1116,14 @@
                       <td><span class="badge-tag">Tour Guide</span></td>
                       <td>anura.guide@mail.lk<br>+94 771 234 567</td>
                       <td><span class="badge-tag success-tag">VERIFIED</span></td>
-                      <td><button class="btn btn-outline btn-sm">Edit</button></td>
+                      <td><button class="btn btn-outline btn-sm" onclick="showToast('Editing Provider PRO-8821', 'info')">Edit</button></td>
                     </tr>
                     <tr>
                       <td><strong>Island Vista Travels</strong><br><span class="micro text-muted">PRO-1029</span></td>
                       <td><span class="badge-tag">Hotel</span></td>
                       <td>ops@islandvista.com<br>+94 112 888 999</td>
                       <td><span class="badge-tag success-tag">VERIFIED</span></td>
-                      <td><button class="btn btn-outline btn-sm">Edit</button></td>
+                      <td><button class="btn btn-outline btn-sm" onclick="showToast('Editing Provider PRO-1029', 'info')">Edit</button></td>
                     </tr>
                   </tbody>
                 </table>
@@ -1086,14 +1131,14 @@
             </div>
           </div>
 
-          <!-- ADMIN TAB 5: FINANCIAL OVERSIGHT -->
+          <!-- ADMIN TAB 6: FINANCIAL OVERSIGHT -->
           <div class="admin-page-content" id="adm-page-finance">
             <div class="flex-between mb-4">
               <div>
                 <h2>Financial Oversight</h2>
                 <p class="text-muted">Track platform revenue, post fees, and transaction logs.</p>
               </div>
-              <button class="btn btn-primary" onclick="alert('Exporting Financial CSV...')"><i class="fa-solid fa-download"></i> Export Financial Report</button>
+              <button class="btn btn-primary" onclick="showToast('Financial CSV exported.', 'success')"><i class="fa-solid fa-download"></i> Export Financial Report</button>
             </div>
 
             <div class="grid-3 mb-4">
@@ -1115,39 +1160,70 @@
             </div>
           </div>
 
-          <!-- ADMIN TAB 6: SYSTEM SETTINGS & MANAGE ADMINS -->
+          <!-- ADMIN TAB 7: SITE SETTINGS & MANAGE ADMINS -->
           <div class="admin-page-content" id="adm-page-settings">
-            <h2>System Settings & Admin Privileges</h2>
-            <p class="text-muted mb-4">Manage primary admin security and designate additional admin users.</p>
+            <h2>Site Settings & Admin Privileges</h2>
+            <p class="text-muted mb-4">Configure site-wide policies, registration toggles, homepage announcements, and admin roles.</p>
 
-            <!-- MANAGE ADMINS SECTION -->
-            <div class="card mb-4">
-              <div class="flex-between mb-3">
-                <div>
-                  <h3><i class="fa-solid fa-user-shield text-accent"></i> Manage Administrators</h3>
-                  <p class="text-muted small">Designate or invite secondary admin accounts to manage moderation and platform settings.</p>
-                </div>
+            <div class="grid-2-custom mb-4">
+              <!-- SITE SETTINGS FORM CARD -->
+              <div class="card">
+                <h3><i class="fa-solid fa-sliders text-accent"></i> Global Site Settings</h3>
+                <p class="text-muted small mb-3">Control platform behavior and live site settings.</p>
+                
+                <form id="site-settings-form" onsubmit="handleSaveSiteSettings(event)">
+                  <div class="form-group mb-3">
+                    <label class="toggle-control-label flex-between p-3 border-card">
+                      <span><strong>Enable User Registrations</strong><br><small class="text-muted">Allow new travelers to create accounts</small></span>
+                      <input type="checkbox" id="setting-allow-registrations" checked>
+                    </label>
+                  </div>
+
+                  <div class="form-group mb-3">
+                    <label class="toggle-control-label flex-between p-3 border-card">
+                      <span><strong>Homepage Announcement Banner</strong><br><small class="text-muted">Show top notification banner on site</small></span>
+                      <input type="checkbox" id="setting-enable-banner" checked>
+                    </label>
+                  </div>
+
+                  <div class="form-group mb-3">
+                    <label class="form-label">Announcement Banner Text</label>
+                    <input type="text" id="setting-banner-text" class="form-control" value="🔥 Summer Special: Instant cost-sharing verified for all new adventure trips!" placeholder="Enter announcement banner message...">
+                  </div>
+
+                  <div class="form-group mb-3">
+                    <label class="toggle-control-label flex-between p-3 border-card">
+                      <span><strong>Maintenance Mode</strong><br><small class="text-muted">Restrict new trip creation</small></span>
+                      <input type="checkbox" id="setting-maintenance-mode">
+                    </label>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary btn-block btn-lg"><i class="fa-solid fa-floppy-disk"></i> Save Site Settings</button>
+                </form>
               </div>
 
-              <!-- Add Admin Form -->
-              <form id="add-admin-form" class="mb-4" onsubmit="handleAddAdminSubmit(event)">
-                <div class="form-row">
-                  <div class="form-group col-6">
+              <!-- MANAGE ADMINS SECTION -->
+              <div class="card">
+                <h3><i class="fa-solid fa-user-shield text-accent"></i> Manage Administrators</h3>
+                <p class="text-muted small mb-3">Designate or invite secondary admin accounts to manage moderation.</p>
+
+                <!-- Add Admin Form -->
+                <form id="add-admin-form" class="mb-4" onsubmit="handleAddAdminSubmit(event)">
+                  <div class="form-group">
                     <label class="form-label">Admin Full Name</label>
                     <input type="text" class="form-control" id="new-admin-name" placeholder="e.g. Kasun Jayawardena" required>
                   </div>
-                  <div class="form-group col-6">
+                  <div class="form-group">
                     <label class="form-label">Admin Email Address</label>
                     <input type="email" class="form-control" id="new-admin-email" placeholder="kasun.admin@tripbuddy.com" required>
                   </div>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Grant Administrator Access</button>
-              </form>
+                  <button type="submit" class="btn btn-outline btn-block"><i class="fa-solid fa-user-plus"></i> Grant Administrator Access</button>
+                </form>
 
-              <!-- Designated Admins List -->
-              <h4>Active Administrators List</h4>
-              <div class="admin-list-box mt-2" id="admin-list-container">
-                <!-- Dynamically Populated by script.js -->
+                <h4>Active Administrators List</h4>
+                <div class="admin-list-box mt-2" id="admin-list-container">
+                  <!-- Dynamically Populated by script.js -->
+                </div>
               </div>
             </div>
           </div>
@@ -1455,7 +1531,72 @@
         </div>
       </div>
     </div>
-  </footer>
+  <!-- 4. EDIT TRIP MODAL -->
+  <div class="modal-backdrop" id="edit-trip-modal">
+    <div class="modal-card modal-lg">
+      <button class="modal-close-btn" onclick="closeEditTripModal()"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div class="modal-header-custom">
+        <h2><i class="fa-solid fa-pen-to-square text-accent"></i> Edit Trip Details</h2>
+        <p class="text-muted">Update details for trip post <strong id="edit-trip-id-display">#WB-101</strong>.</p>
+      </div>
+
+      <form class="mt-3" onsubmit="handleSaveTripEdit(event)">
+        <input type="hidden" id="edit-trip-id">
+        <div class="form-row">
+          <div class="form-group col-8">
+            <label class="form-label">Trip Title</label>
+            <input type="text" id="edit-trip-title" class="form-control" required>
+          </div>
+          <div class="form-group col-4">
+            <label class="form-label">Category</label>
+            <select id="edit-trip-category" class="form-control" required>
+              <option value="Adventure">Adventure</option>
+              <option value="Beach">Beach</option>
+              <option value="Mountain">Mountain</option>
+              <option value="Cultural">Cultural</option>
+              <option value="Road trip">Road trip</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label class="form-label">Price / Cost (LKR)</label>
+            <input type="text" id="edit-trip-price" class="form-control" required>
+          </div>
+          <div class="form-group col-6">
+            <label class="form-label">Location</label>
+            <input type="text" id="edit-trip-location" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label class="form-label">Quotas</label>
+            <input type="text" id="edit-trip-quotas" class="form-control" placeholder="e.g. 2 Males, 2 Females" required>
+          </div>
+          <div class="form-group col-6">
+            <label class="form-label">Vehicle / Transport</label>
+            <input type="text" id="edit-trip-vehicle" class="form-control" placeholder="e.g. Private Luxury Van" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="edit-trip-description" class="form-control" rows="4" required></textarea>
+        </div>
+
+        <div class="flex-end gap-2 mt-3">
+          <button type="button" class="btn btn-outline" onclick="closeEditTripModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="toast-container"></div>
 
   <script src="script.js"></script>
 </body>

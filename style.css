@@ -968,3 +968,278 @@ h1, h2, h3, h4, h5, h6 {
 @media (min-width: 992px) {
   .container { padding: 0 30px; }
 }
+
+/* -------------------------------------------------------------------------- */
+/* VERTICAL DYNAMIC ROUTE LIST FOR DESTINATIONS & STOPS                        */
+/* -------------------------------------------------------------------------- */
+
+.route-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.route-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: white;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.route-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 1. Start / Main Destination (Full width, prominent styling) */
+.route-item.main-destination {
+  background: #f0fdf4;
+  border: 2px solid #22c55e;
+  width: 100%;
+}
+
+/* 2. Sub-destinations / Stops (Indented with margin-left: 20px) */
+.route-item.sub-destination {
+  margin-left: 20px;
+  background: #f8fafc;
+  border-left: 4px solid var(--color-cyan);
+}
+
+.route-item-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.route-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-uppercase: uppercase;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
+}
+
+.route-step-badge.start-badge {
+  background: #22c55e;
+  color: white;
+}
+
+.route-step-badge.stop-badge {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.route-location-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+}
+
+.btn-remove-stop {
+  background: #f1f5f9;
+  border: none;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.btn-remove-stop:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* -------------------------------------------------------------------------- */
+/* SUPER ADMIN DASHBOARD - TOASTS, ANNOUNCEMENTS, CHARTS & CONTROLS           */
+/* -------------------------------------------------------------------------- */
+
+/* Site Announcement Banner */
+.site-announcement-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  border-bottom: 2px solid var(--color-cyan);
+  font-size: 0.88rem;
+  z-index: 1100;
+  position: relative;
+}
+
+.site-announcement-banner .close-banner-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  transition: var(--transition);
+}
+
+.site-announcement-banner .close-banner-btn:hover {
+  color: white;
+}
+
+/* Toast Notifications Container */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 0.9rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: #0f172a;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-left: 4px solid var(--color-cyan);
+  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.toast.toast-success {
+  border-left-color: #10b981;
+}
+.toast.toast-success i {
+  color: #10b981;
+}
+
+.toast.toast-error {
+  border-left-color: #ef4444;
+}
+.toast.toast-error i {
+  color: #ef4444;
+}
+
+.toast.toast-warning {
+  border-left-color: #f59e0b;
+}
+.toast.toast-warning i {
+  color: #f59e0b;
+}
+
+.toast.toast-info {
+  border-left-color: #3b82f6;
+}
+.toast.toast-info i {
+  color: #3b82f6;
+}
+
+/* Chart Canvas Wrapper */
+.chart-box {
+  position: relative;
+  width: 100%;
+  max-height: 260px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.chart-box canvas {
+  max-height: 250px !important;
+  width: 100% !important;
+}
+
+/* Featured Trip Custom Highlights */
+.trip-card.featured-card-border {
+  border: 2px solid var(--color-cyan) !important;
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.25) !important;
+  position: relative;
+}
+
+.badge-tag.featured-tag {
+  background: linear-gradient(135deg, #00f5d4 0%, #3b82f6 100%);
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Site Settings Cards & Borders */
+.border-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+}
+
+.toggle-control-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--color-cyan);
+}
+
+.btn-success {
+  background: #10b981;
+  color: white;
+  border: none;
+}
+.btn-success:hover {
+  background: #059669;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: white;
+  border: none;
+}
+.btn-warning:hover {
+  background: #d97706;
+}
+
+.btn-accent {
+  background: var(--color-cyan);
+  color: var(--bg-dark);
+  font-weight: 600;
+  border: none;
+}
+.btn-accent:hover {
+  background: #00d6b9;
+}
+

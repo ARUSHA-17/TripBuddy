@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Supabase JS Client Library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripBuddy | Peer-to-Peer Travel Companion & Cost-Sharing Platform</title>
+  <meta name="description" content="Connect with travel companions, split trip costs, verify profiles, and discover curated adventures around the world with TripBuddy.">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" type="image/png" href="assets/images/favicon.png">
+  <link rel="apple-touch-icon" href="assets/images/logo.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="light-theme">
+
+  <!-- GLOBAL HEADER NAVBAR -->
+  <header class="global-navbar">
+    <div class="nav-container">
+      <div class="nav-brand" onclick="navigateTo('discover')">
+        <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo">
+      </div>
+
+      <nav class="nav-menu">
+        <a href="#" class="nav-link active" id="nav-discover" onclick="navigateTo('discover')">Discover</a>
+        <a href="#" class="nav-link" id="nav-create" onclick="navigateTo('create')">Create</a>
+        <a href="#" class="nav-link" id="nav-services" onclick="navigateTo('services')">Services</a>
+        <a href="#" class="nav-link admin-nav-tag admin-only" id="nav-admin" onclick="navigateTo('admin')" style="display: none;"><i class="fa-solid fa-user-shield"></i> Admin Portal</a>
+      </nav>
+
+      <div class="nav-actions">
+        <!-- Notification Center Bell -->
+        <div class="nav-icon-btn" id="notif-btn" onclick="toggleNotifDrawer()">
+          <i class="fa-regular fa-bell"></i>
+          <span class="notif-badge">3</span>
+        </div>
+
+        <!-- Notification Drawer -->
+        <div class="notif-drawer" id="notif-drawer">
+          <div class="drawer-header">
+            <h4>Notifications</h4>
+            <span class="mark-read" onclick="clearNotifs()">Mark all as read</span>
+          </div>
+          <div class="notif-list">
+            <div class="notif-item unread" onclick="openChatModal('WB-101')">
+              <div class="notif-icon cyan"><i class="fa-solid fa-comments"></i></div>
+              <div class="notif-content">
+                <p><strong>Sarah Jenkins</strong> sent a message in <em>Bali Spiritual Retreat</em></p>
+                <span class="notif-time">10 mins ago</span>
+              </div>
+            </div>
+            <div class="notif-item unread" onclick="navigateTo('profile')">
+              <div class="notif-icon gold"><i class="fa-solid fa-shield-halved"></i></div>
+              <div class="notif-content">
+                <p><strong>KYC Verification:</strong> Your NIC verification is approved!</p>
+                <span class="notif-time">1 hour ago</span>
+              </div>
+            </div>
+            <div class="notif-item" onclick="navigateTo('discover')">
+              <div class="notif-icon blue"><i class="fa-solid fa-map-location-dot"></i></div>
+              <div class="notif-content">
+                <p><strong>New Trip Alert:</strong> Swiss Alps Hiking Expedition matches your interest.</p>
+                <span class="notif-time">3 hours ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Profile Avatar & Dropdown -->
+        <div class="user-avatar-wrapper" onclick="toggleUserDropdown()">
+          <div class="user-avatar" id="nav-user-avatar">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="User Avatar" id="header-avatar-img">
+          </div>
+          <div class="user-dropdown" id="user-dropdown">
+            <div class="dropdown-header">
+              <div class="dropdown-name" id="dropdown-user-name">Alex Thorne</div>
+              <div class="dropdown-role" id="dropdown-user-role"><span class="badge-tag verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span></div>
+            </div>
+            <hr>
+            <a href="#" class="dropdown-item" onclick="navigateTo('profile')"><i class="fa-regular fa-user"></i> My Profile & Trips</a>
+            <a href="#" class="dropdown-item" onclick="navigateTo('public-profile')"><i class="fa-solid fa-address-card"></i> Public Profile View</a>
+            <a href="#" class="dropdown-item" onclick="navigateTo('security')"><i class="fa-solid fa-key"></i> Security Settings</a>
+            <a href="#" class="dropdown-item admin-only" id="dropdown-admin-item" onclick="navigateTo('admin')" style="display: none;"><i class="fa-solid fa-chart-line"></i> Admin Console</a>
+            <!-- STRICT SECURITY RULE: Role switching hidden for regular users, admin-only -->
+            <a href="#" class="dropdown-item admin-only" id="dropdown-switch-role-item" onclick="toggleDemoRole()" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Switch Role (<strong id="current-role-label">User</strong>)</a>
+            <hr>
+            <a href="#" class="dropdown-item danger" onclick="showAuthModal('login')"><i class="fa-solid fa-right-from-bracket"></i> Switch Account / Logout</a>
+          </div>
+        </div>
+
+        <!-- Auth Toggle Button for Logged out mode -->
+        <button class="btn btn-outline btn-sm" id="auth-modal-btn" onclick="showAuthModal('login')">Sign In</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTENT CONTAINERS (SPA VIEWS) -->
+  <main class="app-main-content">
+
+    <!-- 1. DISCOVER HUB VIEW -->
+    <section class="view-section active" id="view-discover">
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div class="hero-content">
+          <h1 class="hero-title">Find your travel tribe</h1>
+          <p class="hero-subtitle">Split costs, share experiences, and explore together safely.</p>
+          
+          <div class="hero-search-box">
+            <div class="search-input-group">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" id="trip-search-input" placeholder="Where to Go (e.g. Bali, Swiss Alps, Knuckles)..." oninput="filterTrips()">
+            </div>
+            <button class="btn btn-primary" onclick="filterTrips()">Explore Trips</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Pills Bar -->
+      <div class="filter-container">
+        <div class="filter-pills" id="category-pills">
+          <button class="filter-pill active" data-category="all" onclick="selectCategory('all', this)">All trips</button>
+          <button class="filter-pill" data-category="Adventure" onclick="selectCategory('Adventure', this)"><i class="fa-solid fa-person-hiking"></i> Adventure</button>
+          <button class="filter-pill" data-category="Beach" onclick="selectCategory('Beach', this)"><i class="fa-solid fa-umbrella-beach"></i> Beach</button>
+          <button class="filter-pill" data-category="Mountain" onclick="selectCategory('Mountain', this)"><i class="fa-solid fa-mountain"></i> Mountain</button>
+          <button class="filter-pill" data-category="Cultural" onclick="selectCategory('Cultural', this)"><i class="fa-solid fa-landmark"></i> Cultural</button>
+          <button class="filter-pill" data-category="Road trip" onclick="selectCategory('Road trip', this)"><i class="fa-solid fa-car-side"></i> Road trip</button>
+        </div>
+      </div>
+
+      <!-- Trip Cards Feed Grid -->
+      <div class="container">
+        <div class="section-header-flex">
+          <h2>Featured Companion Trips</h2>
+          <span class="results-count" id="trip-count-label">Showing 6 verified active trips</span>
+        </div>
+
+        <div class="trip-grid" id="trip-cards-container">
+          <!-- Dynamically Populated by script.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TRIP DETAILS VIEW -->
+    <section class="view-section" id="view-details">
+      <div class="container py-4">
+        <!-- Back Navigation -->
+        <button class="btn-back" onclick="navigateTo('discover')"><i class="fa-solid fa-arrow-left"></i> Back to Discover</button>
+
+        <!-- Main Banner Header -->
+        <div class="details-hero-card" id="details-hero">
+          <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80" alt="Trip Banner" class="details-banner-img" id="det-img">
+          <div class="details-hero-overlay">
+            <span class="badge-tag verified-tag mb-2" id="det-badge"><i class="fa-solid fa-shield-check"></i> Verified Host</span>
+            <h1 class="details-title" id="det-title">Bali Spiritual & Wellness Retreat</h1>
+            <div class="details-meta-line" id="det-meta">
+              <span><i class="fa-regular fa-calendar-days"></i> Oct 12 — Oct 20, 2026</span>
+              <span><i class="fa-regular fa-clock"></i> 8 Days</span>
+              <span><i class="fa-solid fa-location-dot"></i> Ubud, Indonesia</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Details Content -->
+        <div class="details-layout-grid">
+          <!-- Left Column: Story, Itinerary & Tribe -->
+          <div class="details-main-col">
+            <!-- Host Info Card -->
+            <div class="card host-info-card">
+              <div class="host-avatar-box">
+                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80" alt="Host Avatar" id="det-host-img">
+              </div>
+              <div class="host-details">
+                <span class="label-sub">Trip Host</span>
+                <h3 id="det-host-name">Sarah Jenkins</h3>
+                <p id="det-host-bio">Professional Yoga Instructor & Mountain Climber • 14 trips hosted</p>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="navigateTo('public-profile')">View Profile</button>
+            </div>
+
+            <!-- About Adventure -->
+            <div class="card mb-4">
+              <h3>About this adventure</h3>
+              <p class="text-body" id="det-description">
+                Reconnect with your inner self in the heart of Ubud. This 8-day spiritual retreat is designed for those seeking a balance between high-altitude adventure and deep meditative practices. We'll start our days with sunrise yoga overlooking the Tegallalang Rice Terrace and end them with traditional Balinese sound healing ceremonies.
+              </p>
+            </div>
+
+            <!-- Planned Itinerary Accordion -->
+            <div class="card mb-4">
+              <h3>Planned Itinerary</h3>
+              <div class="itinerary-accordion" id="itinerary-accordion">
+                <div class="accordion-item open">
+                  <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <span class="day-badge">01</span>
+                    <span class="day-title">Arrival & Opening Ceremony</span>
+                    <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                  </div>
+                  <div class="accordion-body">
+                    <p>Airport pickup, check-in to our private villa, and a traditional welcome dinner. We'll set our intentions for the week under the first moonrise.</p>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <span class="day-badge">02</span>
+                    <span class="day-title">Ubud Jungle Trek & Meditation</span>
+                    <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                  </div>
+                  <div class="accordion-body">
+                    <p>Early morning guided trek through Campuhan Ridge Walk, followed by midday meditation session and healthy organic lunch.</p>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <span class="day-badge">03</span>
+                    <span class="day-title">Water Purification Ritual</span>
+                    <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                  </div>
+                  <div class="accordion-body">
+                    <p>Visit Tirta Empul Temple for authentic holy spring water ritual with local spiritual masters.</p>
+                  </div>
+                </div>
+              </div>
+              <button class="btn-link mt-3" onclick="alert('Full detailed itinerary loaded.')">View Full Itinerary &rarr;</button>
+            </div>
+
+            <!-- Travel Tribe Members -->
+            <div class="card mb-4">
+              <div class="section-header-flex">
+                <h3>Travel Tribe</h3>
+                <span class="text-muted">4 / 8 spots filled</span>
+              </div>
+              <div class="tribe-avatars-row">
+                <div class="tribe-member">
+                  <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80" alt="Host">
+                  <span>Host (Sarah)</span>
+                </div>
+                <div class="tribe-member">
+                  <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80" alt="Elena">
+                  <span>Elena</span>
+                </div>
+                <div class="tribe-member">
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" alt="Mark">
+                  <span>Mark</span>
+                </div>
+                <div class="tribe-member">
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Alex">
+                  <span>Alex</span>
+                </div>
+                <div class="tribe-member add-slot" onclick="openChatModal(state.selectedTripId)">
+                  <div class="slot-circle"><i class="fa-solid fa-plus"></i></div>
+                  <span>Join Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Cost Card & Direct Connect (No Payment Required) -->
+          <div class="details-side-col">
+            <div class="card booking-sticky-card">
+              <div class="price-header">
+                <div>
+                  <span class="label-sub">Estimated Cost per person</span>
+                  <div class="price-large" id="det-price">LKR 185,000</div>
+                </div>
+                <span class="badge-tag spots-tag" id="det-spots">4 Spots Left</span>
+              </div>
+
+              <div class="inclusions-block">
+                <h4><i class="fa-solid fa-circle-check color-success"></i> What's Included</h4>
+                <ul>
+                  <li>Private 4-star villa accommodation</li>
+                  <li>Daily breakfast & 4 organic dinners</li>
+                  <li>All local ground transportation</li>
+                  <li>Temple entrance fees & activity permits</li>
+                  <li>Private Yoga & Meditation instruction</li>
+                </ul>
+
+                <h4><i class="fa-solid fa-circle-xmark color-danger"></i> Not Included</h4>
+                <ul>
+                  <li>International flights to/from Denpasar</li>
+                  <li>Personal travel insurance (Required)</li>
+                </ul>
+              </div>
+
+              <!-- Cost Progress -->
+              <div class="cost-progress-box">
+                <div class="progress-labels">
+                  <span>Cost-sharing Progress</span>
+                  <strong>LKR 740,000 / LKR 1,480,000</strong>
+                </div>
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" style="width: 50%;"></div>
+                </div>
+              </div>
+
+              <!-- Action Button: Direct Connect to Group Chat without Payment -->
+              <button class="btn btn-primary btn-block btn-lg" id="details-connect-btn" onclick="openChatModal(state.selectedTripId)">
+                Request to Connect & Chat <i class="fa-solid fa-comments"></i>
+              </button>
+              <p class="micro-note text-center mt-2"><i class="fa-solid fa-shield-halved text-success"></i> Free direct group chat portal with the Trip Host.</p>
+
+              <hr>
+
+              <!-- Trip Specifications Specs -->
+              <div class="trip-specs-list">
+                <div class="spec-item">
+                  <i class="fa-solid fa-users"></i>
+                  <div>
+                    <strong>Group Quotas</strong>
+                    <span id="det-quotas">2 Males, 2 Females</span>
+                  </div>
+                </div>
+                <div class="spec-item">
+                  <i class="fa-solid fa-van-shuttle"></i>
+                  <div>
+                    <strong>Vehicle Type</strong>
+                    <span id="det-vehicle">Private Luxury Van</span>
+                  </div>
+                </div>
+                <div class="spec-item">
+                  <i class="fa-solid fa-shield-halved"></i>
+                  <div>
+                    <strong>Protection</strong>
+                    <span>Sensitive Info Masking & Secure Chat</span>
+                  </div>
+                </div>
+                <div class="spec-item">
+                  <i class="fa-solid fa-language"></i>
+                  <div>
+                    <strong>Languages Spoken</strong>
+                    <span id="det-lang">English, Sinhala</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. CREATE TRIP FLOW -->
+    <section class="view-section" id="view-create">
+      <div class="container py-4 max-w-800">
+        <div class="section-title-box">
+          <h1>Create a Trip</h1>
+          <p class="text-muted">Find verified companions and share the adventure & costs. Submitted posts undergo Admin Verification before appearing live.</p>
+        </div>
+
+        <form class="card create-trip-form" id="create-trip-form" onsubmit="handlePostTrip(event)">
+          <!-- Cover Image Upload -->
+          <div class="form-group">
+            <label class="form-label">Cover Image</label>
+            <div class="image-upload-dropzone" onclick="triggerFileInput()">
+              <i class="fa-solid fa-camera upload-icon"></i>
+              <p><strong>Upload cover image</strong></p>
+              <span class="text-muted small">High quality (6:2 ratio recommended)</span>
+              <input type="file" id="cover-image-input" accept="image/*" style="display: none;" onchange="handleImagePreview(event)">
+              <div id="image-preview-container" class="mt-2" style="display: none;">
+                <img id="image-preview" src="" alt="Preview" style="max-height: 160px; border-radius: 8px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Trip Title -->
+          <div class="form-group">
+            <label class="form-label" for="trip-title-input">Trip Title</label>
+            <input type="text" class="form-control" id="trip-title-input" placeholder="e.g. Hiking the Knuckles Range & Waterfall Trek" required>
+          </div>
+
+          <!-- Start & End Date with Dynamic Constraints -->
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="start-date-input">Start Date</label>
+              <input type="date" class="form-control" id="start-date-input" onchange="calculateDuration()" required>
+            </div>
+            <div class="form-group col-6">
+              <label class="form-label" for="end-date-input">End Date</label>
+              <input type="date" class="form-control" id="end-date-input" onchange="calculateDuration()" required>
+            </div>
+          </div>
+          <!-- Today Date Highlight Badge -->
+          <div class="today-highlight-badge mb-2" id="today-highlight-badge"></div>
+          <p class="text-accent small mb-3" id="duration-badge"><i class="fa-regular fa-clock"></i> Auto-calculated Duration: 0 Days</p>
+
+          <!-- Category Select -->
+          <div class="form-group">
+            <label class="form-label" for="category-select">Category</label>
+            <select class="form-control" id="category-select" required>
+              <option value="">Select category...</option>
+              <option value="Adventure">Adventure</option>
+              <option value="Beach">Beach</option>
+              <option value="Mountain">Mountain</option>
+              <option value="Cultural">Cultural</option>
+              <option value="Road trip">Road trip</option>
+              <option value="Relaxation">Relaxation</option>
+            </select>
+          </div>
+
+          <!-- Languages Checkboxes -->
+          <div class="form-group">
+            <label class="form-label">Languages Spoken</label>
+            <div class="checkbox-group">
+              <label class="custom-checkbox"><input type="checkbox" id="lang-sinhala" checked> <span>Sinhala</span></label>
+              <label class="custom-checkbox"><input type="checkbox" id="lang-english" checked> <span>English</span></label>
+              <label class="custom-checkbox"><input type="checkbox" id="lang-tamil"> <span>Tamil</span></label>
+            </div>
+          </div>
+
+          <!-- Destinations Input -->
+          <div class="form-group">
+            <label class="form-label" for="destinations-input">Destinations (Cities or Landmarks)</label>
+            <div class="input-with-button">
+              <input type="text" class="form-control" id="destinations-input" placeholder="e.g. Kandy, Knuckles, Riverston">
+              <button type="button" class="btn btn-outline" onclick="addDestinationTag()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="tags-row mt-2" id="destinations-tags-container">
+              <span class="badge-tag">Knuckles Range <i class="fa-solid fa-xmark" onclick="this.parentElement.remove()"></i></span>
+              <span class="badge-tag">Riverston Peak <i class="fa-solid fa-xmark" onclick="this.parentElement.remove()"></i></span>
+            </div>
+          </div>
+
+          <!-- Vehicle Type -->
+          <div class="form-group">
+            <label class="form-label" for="vehicle-input">Vehicle Type</label>
+            <input type="text" class="form-control" id="vehicle-input" placeholder="e.g. SUV, Sedan, Private Van, or Public Transport" required>
+          </div>
+
+          <!-- Male & Female Companion Breakdown -->
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="male-quota-input">Male Companions Requested</label>
+              <input type="number" class="form-control" id="male-quota-input" min="0" value="2" required>
+            </div>
+            <div class="form-group col-6">
+              <label class="form-label" for="female-quota-input">Female Companions Requested</label>
+              <input type="number" class="form-control" id="female-quota-input" min="0" value="2" required>
+            </div>
+          </div>
+
+          <!-- Estimated Total Cost -->
+          <div class="form-group">
+            <label class="form-label" for="cost-input">Estimated Total Cost (LKR / Rs)</label>
+            <div class="input-suffix-group">
+              <input type="number" class="form-control" id="cost-input" placeholder="e.g. 150000" required>
+              <span class="suffix">LKR</span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label class="form-label" for="description-input">Comprehensive Description & Itinerary</label>
+            <textarea class="form-control" id="description-input" rows="5" placeholder="Outline your itinerary, accommodation, requirements, and what companions should expect..." required></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="form-actions-row">
+            <button type="button" class="btn btn-outline btn-lg" onclick="saveTripAsDraft()"><i class="fa-regular fa-bookmark"></i> Save as a Draft</button>
+            <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Post trip — Rs 100/=</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 4. SERVICE PROVIDER DIRECTORY VIEW -->
+    <section class="view-section" id="view-services">
+      <div class="container py-4">
+        <div class="section-title-box text-center mb-4">
+          <h1>Verified Service Providers Directory</h1>
+          <p class="text-muted">Connect with verified local hotels, tourist guides, and vehicle renders for your trip logistics.</p>
+        </div>
+
+        <!-- Directory Category Filter Pills -->
+        <div class="filter-container center-filters mb-4">
+          <div class="filter-pills">
+            <button class="filter-pill active" onclick="filterServices('all', this)">All Service Providers</button>
+            <button class="filter-pill" onclick="filterServices('Hotel', this)"><i class="fa-solid fa-hotel"></i> Hotels & Stays</button>
+            <button class="filter-pill" onclick="filterServices('Tour Guide', this)"><i class="fa-solid fa-user-ninja"></i> Tourist Guides</button>
+            <button class="filter-pill" onclick="filterServices('Vehicle Render', this)"><i class="fa-solid fa-van-shuttle"></i> Vehicle Renders</button>
+          </div>
+        </div>
+
+        <!-- Service Providers Grid -->
+        <div class="grid-3" id="services-grid-container">
+          <!-- Dynamically Populated by script.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. USER PROFILE DASHBOARD VIEW -->
+    <section class="view-section" id="view-profile">
+      <div class="container py-4 max-w-900">
+        <!-- Profile Header Card -->
+        <div class="card profile-header-card mb-4">
+          <div class="profile-avatar-container">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Alex Thorne" id="profile-main-img">
+            <button class="btn-avatar-edit" onclick="alert('Update Profile Image option selected.')"><i class="fa-solid fa-pencil"></i></button>
+          </div>
+          <div class="profile-header-info">
+            <div class="title-with-badge">
+              <h2 id="profile-name-label">Alex Thorne</h2>
+              <span class="badge-tag verified-tag" id="profile-status-badge"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span>
+            </div>
+            <p class="text-muted" id="profile-bio-label">Adventure enthusiast & cost-sharing expert. Exploring the world one bond at a time.</p>
+          </div>
+        </div>
+
+        <!-- My Trips Tab Container -->
+        <div class="card mb-4">
+          <div class="section-header-flex">
+            <h3>My Trips & Drafts</h3>
+            <button class="btn-link" onclick="navigateTo('create')">+ Create New Trip</button>
+          </div>
+
+          <!-- Upcoming Trips -->
+          <div class="trip-section-block mb-3">
+            <span class="label-sub text-uppercase">Upcoming Trips</span>
+            <div class="my-trip-item mt-2">
+              <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=150&q=80" alt="Bali">
+              <div class="my-trip-info">
+                <h4>Bali Spiritual & Wellness Retreat</h4>
+                <span>Oct 12 - Oct 20, 2026</span>
+              </div>
+              <span class="badge-tag confirmed-tag">CONFIRMED</span>
+              <button class="btn btn-outline btn-sm ml-2" onclick="openChatModal('WB-101')">Open Group Chat</button>
+            </div>
+          </div>
+
+          <!-- Past Trips -->
+          <div class="trip-section-block mb-3">
+            <span class="label-sub text-uppercase">Past Trips</span>
+            <div class="my-trip-item mt-2">
+              <div class="my-trip-info">
+                <h4>Historical Sigiriya & Cultural Triangle</h4>
+                <span>Apr 10 - Apr 14, 2026</span>
+              </div>
+              <span class="badge-tag spots-tag micro">EXPIRED</span>
+              <button class="btn btn-outline btn-sm ml-2" onclick="openChatModal('WB-105')">View Read-Only Chat</button>
+            </div>
+          </div>
+
+          <!-- Drafts -->
+          <div class="trip-section-block">
+            <span class="label-sub text-uppercase">Saved Drafts</span>
+            <div class="my-trip-item mt-2" id="drafts-list-container">
+              <div class="my-trip-info">
+                <h4>Untitled Trip to Iceland</h4>
+                <span class="text-muted">Last edited 2 days ago</span>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="navigateTo('create')"><i class="fa-solid fa-pen-to-square"></i> Edit Draft</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Identity Verification Form Card -->
+        <div class="card mb-4" id="identity-verification-card">
+          <div class="card-header-icon flex-between">
+            <div class="flex-align gap-2">
+              <div class="icon-circle cyan"><i class="fa-solid fa-id-card"></i></div>
+              <div>
+                <h3>Identity Verification & Trust Boost</h3>
+                <p class="text-muted small">Submit valid NIC or passport details for admin badge verification.</p>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="toggleVerificationForm()">Expand Form</button>
+          </div>
+
+          <form class="verification-form mt-3" id="verification-form" style="display: none;" onsubmit="handleKYCSubmit(event)">
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Mobile Number</label>
+                <input type="text" class="form-control" id="kyc-phone" value="+94 77 123 4567" required>
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">NIC / Passport Number</label>
+                <input type="text" class="form-control" id="kyc-nic" placeholder="e.g. 199012345678" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Residential Address</label>
+              <input type="text" class="form-control" id="kyc-address" placeholder="Street name, City, Country" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Gender</label>
+                <div class="radio-group mt-1">
+                  <label><input type="radio" name="gender" value="Male" checked> Male</label>
+                  <label class="ml-3"><input type="radio" name="gender" value="Female"> Female</label>
+                </div>
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" class="form-control" id="kyc-dob" value="1995-08-15" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">DOCUMENT UPLOAD (NIC, LICENSE, OR PASSPORT)</label>
+              <div class="upload-grid-2">
+                <div class="upload-box-mini">
+                  <i class="fa-solid fa-file-arrow-up"></i>
+                  <span>Upload Front Side</span>
+                </div>
+                <div class="upload-box-mini">
+                  <i class="fa-solid fa-file-arrow-up"></i>
+                  <span>Upload Back Side</span>
+                </div>
+              </div>
+              <p class="micro-note text-muted mt-2"><i class="fa-solid fa-circle-info"></i> Ensure document is clear and all details are legible.</p>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-shield-check"></i> Confirm & Boost Profile</button>
+          </form>
+        </div>
+
+        <!-- Settings Links Grid -->
+        <div class="grid-2">
+          <div class="card card-clickable" onclick="navigateTo('security')">
+            <div class="flex-between">
+              <div class="flex-align gap-2">
+                <i class="fa-solid fa-lock text-accent"></i>
+                <strong>Security Settings</strong>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+          </div>
+          <div class="card card-clickable" onclick="alert('Notification Preferences: Email and SMS alerts enabled.')">
+            <div class="flex-between">
+              <div class="flex-align gap-2">
+                <i class="fa-solid fa-bell text-accent"></i>
+                <strong>Notifications</strong>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+          </div>
+          <div class="card card-clickable" onclick="alert('Saved Payment Cards: Visa ending in 4242 active.')">
+            <div class="flex-between">
+              <div class="flex-align gap-2">
+                <i class="fa-solid fa-credit-card text-accent"></i>
+                <strong>Payment Methods</strong>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+          </div>
+          <div class="card card-clickable" onclick="alert('Support Center: Contact support@tripbuddy.com')">
+            <div class="flex-between">
+              <div class="flex-align gap-2">
+                <i class="fa-solid fa-circle-question text-accent"></i>
+                <strong>Support Center</strong>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. PUBLIC PROFILE CARD VIEW -->
+    <section class="view-section" id="view-public-profile">
+      <div class="container py-4 max-w-1000">
+        <!-- Top Profile Banner Card -->
+        <div class="card public-profile-card mb-4">
+          <div class="public-profile-header-flex">
+            <div class="public-avatar-wrapper">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Alex Thorne">
+              <span class="badge-tag verified-badge-floating"><i class="fa-solid fa-check"></i> Verified</span>
+            </div>
+
+            <div class="public-info-main">
+              <div class="public-title-row">
+                <h2>Alex Thorne</h2>
+                <div class="public-actions">
+                  <button class="btn btn-primary btn-sm" onclick="openChatModal('WB-101')"><i class="fa-solid fa-message"></i> Request Connect</button>
+                  <button class="btn btn-outline btn-sm" onclick="alert('Profile link copied to clipboard!')"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                </div>
+              </div>
+              <p class="public-headline">Curating high-altitude adventures and sustainable coastal escapes.</p>
+
+              <!-- Stats Bar -->
+              <div class="public-stats-bar">
+                <div class="stat-item">
+                  <span class="stat-num">48</span>
+                  <span class="stat-lbl">Trips taken</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-num">32</span>
+                  <span class="stat-lbl">Places visited</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-num">1.2k</span>
+                  <span class="stat-lbl">Tribe members</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-num color-gold"><i class="fa-solid fa-star"></i> 4.9</span>
+                  <span class="stat-lbl">Rating</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Public Profile Layout -->
+        <div class="grid-2-custom">
+          <!-- Left Column: About & Badges -->
+          <div>
+            <div class="card mb-4">
+              <h3>About Me</h3>
+              <p class="text-body small mb-3">
+                Architect by day, mountain climber by choice. I believe that the best way to see the world is with a small group of like-minded people who value experience over luxury. I specialize in logistics for rugged terrains.
+              </p>
+
+              <h5>Languages</h5>
+              <div class="tags-row mb-3">
+                <span class="badge-tag">English (Native)</span>
+                <span class="badge-tag">Sinhala (Fluent)</span>
+                <span class="badge-tag">German (B2)</span>
+              </div>
+
+              <h5>Interests</h5>
+              <div class="tags-row mb-3">
+                <span class="badge-tag">#Hiking</span>
+                <span class="badge-tag">#Photography</span>
+                <span class="badge-tag">#Climbing</span>
+                <span class="badge-tag">#Sustainability</span>
+              </div>
+            </div>
+
+            <!-- Badges -->
+            <div class="card mb-4">
+              <h3>Badges</h3>
+              <div class="badges-grid mt-2">
+                <div class="badge-icon-box" title="Explorer"><i class="fa-solid fa-compass"></i></div>
+                <div class="badge-icon-box" title="Top Host"><i class="fa-solid fa-trophy"></i></div>
+                <div class="badge-icon-box" title="Eco Friendly"><i class="fa-solid fa-leaf"></i></div>
+                <div class="badge-icon-box" title="Globe Trotter"><i class="fa-solid fa-plane"></i></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Travel History & Reviews -->
+          <div>
+            <div class="card mb-4">
+              <div class="section-header-flex">
+                <h3>Travel History</h3>
+                <span class="btn-link">View All</span>
+              </div>
+              <div class="grid-2 mt-2">
+                <div class="mini-travel-card">
+                  <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80" alt="Dolomites">
+                  <div class="mini-travel-body">
+                    <strong>Dolomites Expedition</strong>
+                    <span class="text-muted micro">8-day alpine trek</span>
+                  </div>
+                </div>
+                <div class="mini-travel-card">
+                  <img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=400&q=80" alt="Kyoto">
+                  <div class="mini-travel-body">
+                    <strong>Kyoto Zen Tour</strong>
+                    <span class="text-muted micro">Cultural immersion</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedbacks & Reviews System -->
+            <div class="card">
+              <div class="section-header-flex">
+                <h3>Feedbacks & Reviews</h3>
+                <span class="color-gold"><strong><i class="fa-solid fa-star"></i> 4.9</strong> (124 reviews)</span>
+              </div>
+
+              <div class="reviews-list mt-3">
+                <div class="review-item">
+                  <div class="review-header">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" alt="Sarah Chen">
+                    <div>
+                      <strong>Sarah Chen</strong>
+                      <span class="text-muted micro d-block">Dolomites Expedition Co-traveler</span>
+                    </div>
+                    <div class="stars color-gold ml-auto"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                  </div>
+                  <p class="review-text">"Alex is an excellent coordinator. The logistics for our Dolomites trip were flawless. Great co-traveler who knows how to keep morale high!"</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. SECURITY SETTINGS VIEW -->
+    <section class="view-section" id="view-security">
+      <div class="container py-4 max-w-800">
+        <div class="card mb-4">
+          <div class="profile-tab-header mb-4">
+            <span class="tab-item" onclick="navigateTo('profile')">General</span>
+            <span class="tab-item active">Security</span>
+            <span class="tab-item" onclick="alert('Payment settings: Saved Visa card')">Payments</span>
+          </div>
+
+          <!-- Password Management Form -->
+          <form id="password-form" onsubmit="handlePasswordUpdate(event)">
+            <h3><i class="fa-solid fa-key text-accent"></i> Password Management</h3>
+            <div class="form-group mt-3">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-control" value="••••••••" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">New Password</label>
+                <input type="password" class="form-control" placeholder="Min. 8 characters" required>
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" class="form-control" placeholder="Repeat new password" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Password</button>
+          </form>
+        </div>
+
+        <!-- Recovery Options -->
+        <div class="card mb-4">
+          <h3><i class="fa-solid fa-shield-halved text-accent"></i> Recovery Options</h3>
+          
+          <div class="recovery-item flex-between p-3 border-bottom mt-2">
+            <div>
+              <span class="label-sub">Recovery Email</span>
+              <p class="mb-0"><strong>a.rivera****@gmail.com</strong></p>
+            </div>
+            <button class="btn btn-outline btn-sm">Edit</button>
+          </div>
+
+          <div class="recovery-item flex-between p-3 border-bottom">
+            <div>
+              <span class="label-sub">Phone Number</span>
+              <p class="mb-0"><strong>+94 (77) •••• 42</strong></p>
+            </div>
+            <button class="btn btn-outline btn-sm">Edit</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. ADMIN MANAGEMENT CONSOLE VIEW -->
+    <section class="view-section" id="view-admin">
+      <div class="admin-wrapper">
+        <!-- Admin Left Sidebar -->
+        <aside class="admin-sidebar">
+          <div class="admin-sidebar-header" onclick="navigateTo('discover')">
+            <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo admin-logo">
+            <span class="admin-tag">ADMIN CONSOLE</span>
+          </div>
+
+          <nav class="admin-sidebar-nav">
+            <a href="#" class="admin-nav-item active" id="adm-nav-dashboard" onclick="switchAdminTab('dashboard')"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-users" onclick="switchAdminTab('users')"><i class="fa-solid fa-users"></i> Users & Approvals</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-trips" onclick="switchAdminTab('trips')"><i class="fa-solid fa-route"></i> Trip Moderation</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-services" onclick="switchAdminTab('services')"><i class="fa-solid fa-briefcase"></i> Services</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-finance" onclick="switchAdminTab('finance')"><i class="fa-solid fa-wallet"></i> Finance</a>
+            <a href="#" class="admin-nav-item" id="adm-nav-settings" onclick="switchAdminTab('settings')"><i class="fa-solid fa-gear"></i> Settings & Admins</a>
+          </nav>
+
+          <div class="admin-sidebar-footer">
+            <div class="admin-user-info">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Admin">
+              <div>
+                <strong>Primary Admin</strong>
+                <span class="text-muted micro d-block">System Overseer</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Admin Main Content Area -->
+        <main class="admin-main">
+          <!-- Admin Top Navbar -->
+          <div class="admin-topbar">
+            <div class="search-input-group">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" placeholder="Search by User ID, Trip ID, NIC..." class="admin-search-input">
+            </div>
+            <div class="flex-align gap-3">
+              <i class="fa-regular fa-bell admin-icon-btn"></i>
+              <div class="flex-align gap-2">
+                <span class="text-muted small">Admin Portal Active</span>
+                <i class="fa-solid fa-circle-user text-accent"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN TAB 1: EXECUTIVE OVERVIEW DASHBOARD -->
+          <div class="admin-page-content active" id="adm-page-dashboard">
+            <div class="flex-between mb-4">
+              <div>
+                <h2>Executive Overview</h2>
+                <p class="text-muted">System performance and growth metrics for your platform.</p>
+              </div>
+              <button class="btn btn-primary" onclick="alert('Exporting PDF Analytics report...')"><i class="fa-solid fa-download"></i> Export PDF Report</button>
+            </div>
+
+            <!-- Stat Cards 4 Across -->
+            <div class="grid-4 mb-4">
+              <div class="stat-card-admin">
+                <div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div>
+                <div class="stat-body">
+                  <span class="stat-title">Active Users</span>
+                  <div class="stat-value">12,450</div>
+                  <span class="badge-stat success">+12.4% vs prev 30d</span>
+                </div>
+              </div>
+              <div class="stat-card-admin">
+                <div class="stat-icon orange"><i class="fa-solid fa-user-clock"></i></div>
+                <div class="stat-body">
+                  <span class="stat-title">Pending Users</span>
+                  <div class="stat-value">2</div>
+                  <span class="badge-stat warning">Awaiting Review</span>
+                </div>
+              </div>
+              <div class="stat-card-admin">
+                <div class="stat-icon blue"><i class="fa-solid fa-clock"></i></div>
+                <div class="stat-body">
+                  <span class="stat-title">Pending Trips</span>
+                  <div class="stat-value" id="admin-dash-pending-trips">1</div>
+                  <span class="badge-stat info">Approval Workflow</span>
+                </div>
+              </div>
+              <div class="stat-card-admin">
+                <div class="stat-icon green"><i class="fa-solid fa-compass"></i></div>
+                <div class="stat-body">
+                  <span class="stat-title">Active Trips</span>
+                  <div class="stat-value">6</div>
+                  <span class="badge-stat success">Verified Live</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Graph + Distribution Grid -->
+            <div class="grid-2-custom mb-4">
+              <div class="card">
+                <div class="flex-between mb-3">
+                  <h3>Revenue & Posting Growth</h3>
+                  <div class="btn-group-sm">
+                    <button class="btn btn-outline btn-sm active">Daily</button>
+                    <button class="btn btn-outline btn-sm">Weekly</button>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <svg viewBox="0 0 500 150" class="svg-chart">
+                    <path d="M10,120 Q80,40 150,90 T300,50 T450,20" fill="none" stroke="#00F5D4" stroke-width="4"/>
+                    <circle cx="450" cy="20" r="6" fill="#00F5D4"/>
+                  </svg>
+                  <div class="chart-labels">
+                    <span>01 MAY</span><span>08 MAY</span><span>15 MAY</span><span>22 MAY</span><span>30 MAY</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3>Top Destinations Distribution</h3>
+                <div class="progress-bar-list mt-3">
+                  <div class="bar-item">
+                    <div class="flex-between small"><span>Ella, Sri Lanka</span><strong>42%</strong></div>
+                    <div class="progress-bar-track"><div class="progress-bar-fill" style="width: 42%;"></div></div>
+                  </div>
+                  <div class="bar-item mt-2">
+                    <div class="flex-between small"><span>Sigiriya, Sri Lanka</span><strong>28%</strong></div>
+                    <div class="progress-bar-track"><div class="progress-bar-fill" style="width: 28%;"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN TAB 2: USER MANAGEMENT & PENDING APPROVALS -->
+          <div class="admin-page-content" id="adm-page-users">
+            <div class="flex-between mb-4">
+              <div>
+                <h2>User Management & Verification</h2>
+                <p class="text-muted">Review pending user registrations and manage live accounts.</p>
+              </div>
+              <div class="flex-align gap-2">
+                <button class="btn btn-primary" onclick="alert('Add New User modal opened')"><i class="fa-solid fa-user-plus"></i> Add User</button>
+              </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="admin-filter-tabs mb-3">
+              <button class="adm-tab active" onclick="filterAdminUsers('all', this)">All Accounts</button>
+              <button class="adm-tab" onclick="filterAdminUsers('pending', this)">Pending Approvals</button>
+            </div>
+
+            <div class="card">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>NAME</th><th>DOB</th><th>PHONE</th><th>STATUS</th><th>ACTIONS</th></tr>
+                  </thead>
+                  <tbody id="admin-users-tbody">
+                    <!-- Populated by script.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN TAB 3: TRIP MODERATION (PENDING APPROVAL WORKFLOW) -->
+          <div class="admin-page-content" id="adm-page-trips">
+            <div class="flex-between mb-4">
+              <div>
+                <h2>Trip Moderation & Approval Workflow</h2>
+                <p class="text-muted">Review pending trip posts before rendering them live on the public feed.</p>
+              </div>
+              <div class="flex-align gap-2">
+                <div class="badge-tag warning-tag p-2" id="admin-pending-trips-count">Pending: 0</div>
+                <div class="badge-tag success-tag p-2">Active: 6</div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>TRIP ID</th><th>HOST</th><th>TITLE</th><th>QUOTAS</th><th>BUDGET</th><th>MODERATION WORKFLOW</th></tr>
+                  </thead>
+                  <tbody id="admin-trips-tbody">
+                    <!-- Populated by script.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card blue-card">
+              <h3><i class="fa-solid fa-gavel"></i> Verification Rules</h3>
+              <ul>
+                <li>New trip posts remain in <code>pending_approval</code> status until explicitly approved here.</li>
+                <li>Once approved, the trip post is instantly rendered on the live public feed.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- ADMIN TAB 4: SERVICE PROVIDER MANAGEMENT -->
+          <div class="admin-page-content" id="adm-page-services">
+            <div class="flex-between mb-4">
+              <div>
+                <h2>Service Provider Directory Management</h2>
+                <p class="text-muted">Manage tour guides, operators, and third-party vehicle vendors.</p>
+              </div>
+              <button class="btn btn-primary" onclick="alert('Add New Service Provider Modal opened.')">+ Add Provider</button>
+            </div>
+
+            <div class="card mb-4">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>PROVIDER NAME</th><th>SERVICE TYPE</th><th>CONTACT INFO</th><th>STATUS</th><th>ACTIONS</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Anura Kumara</strong><br><span class="micro text-muted">PRO-8821</span></td>
+                      <td><span class="badge-tag">Tour Guide</span></td>
+                      <td>anura.guide@mail.lk<br>+94 771 234 567</td>
+                      <td><span class="badge-tag success-tag">VERIFIED</span></td>
+                      <td><button class="btn btn-outline btn-sm">Edit</button></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Island Vista Travels</strong><br><span class="micro text-muted">PRO-1029</span></td>
+                      <td><span class="badge-tag">Hotel</span></td>
+                      <td>ops@islandvista.com<br>+94 112 888 999</td>
+                      <td><span class="badge-tag success-tag">VERIFIED</span></td>
+                      <td><button class="btn btn-outline btn-sm">Edit</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN TAB 5: FINANCIAL OVERSIGHT -->
+          <div class="admin-page-content" id="adm-page-finance">
+            <div class="flex-between mb-4">
+              <div>
+                <h2>Financial Oversight</h2>
+                <p class="text-muted">Track platform revenue, post fees, and transaction logs.</p>
+              </div>
+              <button class="btn btn-primary" onclick="alert('Exporting Financial CSV...')"><i class="fa-solid fa-download"></i> Export Financial Report</button>
+            </div>
+
+            <div class="grid-3 mb-4">
+              <div class="card bg-accent-blue text-white">
+                <span class="label-sub text-white">TOTAL PROFIT</span>
+                <h2>LKR 4,280,500</h2>
+                <span class="small">+12.4% from last month</span>
+              </div>
+              <div class="card">
+                <span class="label-sub">TRIP POSTING FEES</span>
+                <h2>LKR 142,300</h2>
+                <span class="small text-muted">LKR 100 / post fee</span>
+              </div>
+              <div class="card">
+                <span class="label-sub">MATCHING FEES</span>
+                <h2>LKR 892,100</h2>
+                <span class="small text-muted">Verified pairs</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN TAB 6: SYSTEM SETTINGS & MANAGE ADMINS -->
+          <div class="admin-page-content" id="adm-page-settings">
+            <h2>System Settings & Admin Privileges</h2>
+            <p class="text-muted mb-4">Manage primary admin security and designate additional admin users.</p>
+
+            <!-- MANAGE ADMINS SECTION -->
+            <div class="card mb-4">
+              <div class="flex-between mb-3">
+                <div>
+                  <h3><i class="fa-solid fa-user-shield text-accent"></i> Manage Administrators</h3>
+                  <p class="text-muted small">Designate or invite secondary admin accounts to manage moderation and platform settings.</p>
+                </div>
+              </div>
+
+              <!-- Add Admin Form -->
+              <form id="add-admin-form" class="mb-4" onsubmit="handleAddAdminSubmit(event)">
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label class="form-label">Admin Full Name</label>
+                    <input type="text" class="form-control" id="new-admin-name" placeholder="e.g. Kasun Jayawardena" required>
+                  </div>
+                  <div class="form-group col-6">
+                    <label class="form-label">Admin Email Address</label>
+                    <input type="email" class="form-control" id="new-admin-email" placeholder="kasun.admin@tripbuddy.com" required>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Grant Administrator Access</button>
+              </form>
+
+              <!-- Designated Admins List -->
+              <h4>Active Administrators List</h4>
+              <div class="admin-list-box mt-2" id="admin-list-container">
+                <!-- Dynamically Populated by script.js -->
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- 1. AUTH / LOGIN / REGISTER MODAL -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeAuthModal()"><i class="fa-solid fa-xmark"></i></button>
+      
+      <!-- Login View -->
+      <div id="auth-login-view">
+        <div class="auth-logo-header text-center mb-3">
+          <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo modal-logo">
+        </div>
+        <h2 class="text-center mb-1">Welcome Back</h2>
+        <p class="text-muted text-center mb-4">Sign in to manage your trips and connect with travelers.</p>
+        
+        <form onsubmit="handleLoginSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="login-email-input" class="form-control" placeholder="name@example.com" value="alex.thorne@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" value="password123" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Login Account Role</label>
+            <select class="form-control" id="login-role-select">
+              <option value="user">Regular Traveler (User View)</option>
+              <option value="admin">Primary Administrator (Admin Portal)</option>
+            </select>
+          </div>
+          <div class="flex-between mb-3">
+            <label class="custom-checkbox"><input type="checkbox" checked> Remember me</label>
+            <a href="#" class="btn-link small" onclick="alert('Password reset link sent to your email.')">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">Sign In</button>
+        </form>
+        
+        <p class="text-center mt-4 mb-0">Don't have an account? <a href="#" class="btn-link" onclick="switchAuthTab('register')">Create an Account</a></p>
+      </div>
+
+      <!-- Register View -->
+      <div id="auth-register-view" style="display: none;">
+        <div class="auth-logo-header text-center mb-3">
+          <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo modal-logo">
+        </div>
+        <h2 class="text-center mb-1">Create Account</h2>
+        <p class="text-muted text-center mb-3">Join TripBuddy. New accounts are submitted for Admin Verification.</p>
+        
+        <form onsubmit="handleRegisterSubmit(event)">
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="reg-name-input" class="form-control" placeholder="Full Name" required>
+            </div>
+            <div class="form-group col-6">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="reg-email-input" class="form-control" placeholder="name@example.com" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Role</label>
+            <select class="form-control" required>
+              <option value="Traveler">Traveler (Host / Companion)</option>
+              <option value="Hotel">Service Provider - Hotel / Stay</option>
+              <option value="Tourist Guide">Service Provider - Tourist Guide</option>
+              <option value="Vehicle Render">Service Provider - Vehicle Render</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-control" required>
+            </div>
+            <div class="form-group col-6">
+              <label class="form-label">Confirm Password</label>
+              <input type="password" class="form-control" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">Create Account</button>
+        </form>
+        <p class="text-center mt-3 mb-0">Already have an account? <a href="#" class="btn-link" onclick="switchAuthTab('login')">Sign In</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. PAYMENT CHECKOUT MODAL (Posting Fee) -->
+  <div class="modal-backdrop" id="payment-modal">
+    <div class="modal-card modal-lg">
+      <button class="modal-close-btn" onclick="closePaymentModal()"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div class="modal-header-custom">
+        <h2>Complete Your Trip Post Payment</h2>
+        <p class="text-muted">Pay the LKR 100 trip posting fee to submit your trip for Admin Review.</p>
+      </div>
+
+      <div class="grid-2-custom mt-3">
+        <!-- Left: Payment Method -->
+        <div>
+          <h4>Select Payment Method</h4>
+          <div class="payment-method-selector mt-2">
+            <label class="payment-option active">
+              <input type="radio" name="pay-method" checked>
+              <i class="fa-regular fa-credit-card"></i> Credit or Debit Card
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="pay-method">
+              <i class="fa-solid fa-mobile-screen"></i> Mobile Wallets / Online Banking
+            </label>
+          </div>
+
+          <form class="mt-3" onsubmit="processPayment(event)">
+            <div class="form-group">
+              <label class="form-label">Card Number</label>
+              <input type="text" class="form-control" placeholder="4532 •••• •••• 8892" value="4532 8920 1192 8892" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Expiry Date</label>
+                <input type="text" class="form-control" placeholder="MM/YY" value="08/28" required>
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">CVV</label>
+                <input type="password" class="form-control" placeholder="123" value="882" required>
+              </div>
+            </div>
+            <div class="trust-flags flex-align gap-3 my-2">
+              <span class="micro text-muted"><i class="fa-solid fa-lock text-success"></i> SECURE 256-BIT SSL ENCRYPTED</span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="pay-submit-btn">Pay LKR 100.00 &rarr;</button>
+          </form>
+        </div>
+
+        <!-- Right: Order Summary -->
+        <div class="card bg-light">
+          <h4>Order Summary</h4>
+          <div class="order-summary-row flex-between py-2 border-bottom">
+            <span>Trip Posting Fee</span>
+            <strong>LKR 100.00</strong>
+          </div>
+          <div class="order-summary-row flex-between py-3">
+            <h3>Total Amount</h3>
+            <h3 class="color-cyan">LKR 100.00</h3>
+          </div>
+
+          <div class="info-alert-box mt-3">
+            <i class="fa-solid fa-circle-info text-info"></i>
+            <div>
+              <strong>Admin Verification</strong>
+              <p class="micro text-muted mb-0">After payment, your trip will be submitted to the Admin Panel for review. Once approved, it will render on the public feed.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. TRIP GROUP CHAT MODAL (DIRECT CONNECT + PRIVACY PFI FILTER + EXPIRATION READ-ONLY) -->
+  <div class="modal-backdrop" id="chat-modal">
+    <div class="modal-card modal-xl chat-modal-body">
+      <button class="modal-close-btn" onclick="closeChatModal()"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="chat-container-layout">
+        <!-- Chat Left Sidebar -->
+        <div class="chat-sidebar">
+          <div class="chat-trip-preview">
+            <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=300&q=80" alt="Trip Banner" id="chat-modal-trip-img">
+            <div class="mt-2">
+              <h4 id="chat-modal-trip-title">Bali Spiritual & Wellness</h4>
+              <span class="micro text-muted" id="chat-modal-trip-sub"><i class="fa-solid fa-location-dot"></i> Ubud, Indonesia</span>
+            </div>
+          </div>
+
+          <div class="cost-progress-box px-3">
+            <div class="progress-labels micro">
+              <span>Cost Progress</span>
+              <strong>80%</strong>
+            </div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width: 80%;"></div></div>
+          </div>
+
+          <hr class="my-2">
+
+          <div class="px-3">
+            <div class="flex-between mb-2">
+              <span class="label-sub">Travel Tribe</span>
+              <span class="micro text-muted">Active Portal</span>
+            </div>
+            <div class="tribe-member-list">
+              <div class="member-row">
+                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80" alt="Host">
+                <div>
+                  <strong>Trip Host</strong>
+                  <span class="micro text-accent d-block">Verified Host</span>
+                </div>
+              </div>
+              <div class="member-row">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="You">
+                <div>
+                  <strong>You (Traveler)</strong>
+                  <span class="micro text-success d-block">Connected</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-outline btn-block btn-sm mt-3" onclick="closeChatModal(); navigateTo('details');">View Trip Specs</button>
+          </div>
+        </div>
+
+        <!-- Chat Main Stream -->
+        <div class="chat-main-stream">
+          <div class="chat-header-bar flex-between">
+            <div>
+              <h3>Group Chat Portal</h3>
+              <span class="micro text-muted">Protected Peer-to-Peer Planning Hub</span>
+            </div>
+            <div class="flex-align gap-2">
+              <span class="badge-tag verified-tag micro"><i class="fa-solid fa-shield-cat"></i> PFI Privacy Filter Active</span>
+            </div>
+          </div>
+
+          <!-- PFI Privacy Filter Toast Notice -->
+          <div class="chat-pfi-warning" id="chat-pfi-warning" style="display: none;">
+            <i class="fa-solid fa-shield-cat"></i> <strong>Privacy Guard:</strong> Personal phone numbers, email addresses, external URLs, or social handles were automatically masked to keep discussions secure.
+          </div>
+
+          <!-- Trip Expiration Read-Only Banner -->
+          <div class="chat-expired-notice" id="chat-expired-notice" style="display: none;"></div>
+
+          <!-- Messages Stream Container -->
+          <div class="chat-messages-container" id="chat-messages">
+            <!-- Dynamically Populated by script.js -->
+          </div>
+
+          <!-- Chat Input Bar -->
+          <form class="chat-input-bar" id="chat-input-form" onsubmit="sendChatMessage(event)">
+            <input type="text" id="chat-text-input" placeholder="Discuss trip logistics, equipment, or schedule..." required>
+            <div class="chat-input-actions">
+              <button type="submit" class="btn btn-primary">Send <i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL FOOTER -->
+  <footer class="global-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col brand-col">
+          <div class="nav-brand mb-2" onclick="navigateTo('discover')">
+            <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo footer-logo">
+          </div>
+          <p class="footer-text">Connecting explorers to share costs, build lifelong memories, and experience safe peer-to-peer travel together around the world.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="#" onclick="navigateTo('discover')">Discover Trips</a></li>
+            <li><a href="#" onclick="navigateTo('create')">Create a Trip</a></li>
+            <li><a href="#" onclick="navigateTo('services')">Service Providers</a></li>
+            <li class="admin-only" id="footer-admin-link" style="display: none;"><a href="#" onclick="navigateTo('admin')">Admin Console</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support & Legal</h4>
+          <ul class="footer-links">
+            <li><a href="#" onclick="alert('Help Center loaded.')">Help Center</a></li>
+            <li><a href="#" onclick="alert('Terms of Service loaded.')">Terms of Service</a></li>
+            <li><a href="#" onclick="alert('Privacy Policy loaded.')">Privacy Policy</a></li>
+            <li><a href="#" onclick="alert('Safety guidelines loaded.')">Safety Rules</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Connect With Us</h4>
+          <p class="footer-text">Email: support@tripbuddy.com<br>Phone: +94 11 234 5678</p>
+          <div class="social-icons">
+            <a href="#"><i class="fa-brands fa-facebook"></i></a>
+            <a href="#"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <hr class="footer-divider">
+
+      <div class="footer-bottom flex-between">
+        <p>&copy; 2026 TripBuddy. All rights reserved.</p>
+        <div class="footer-badge">
+          <i class="fa-solid fa-shield-halved text-accent"></i> Verified Trust Platform
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

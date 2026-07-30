@@ -5,8 +5,8 @@
 
 // --- INITIAL DATA STORE & SUPABASE DATABASE CONFIGURATION ---
 
-const SUPABASE_URL = https://afwixacnnmvrvfsnvdxu.supabase.co;
-const SUPABASE_ANON_KEY = sb_publishable_eHKdCuol5Cw4gOg6OhDWpg_1up2pVMs;
+const SUPABASE_URL = 'https://afwixacnnmvrvfsnvdxu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_eHKdCuol5Cw4gOg6OhDWpg_1up2pVMs';
 
 // Initialize Supabase Client safely using CDN global
 let supabaseClient = null;
@@ -244,12 +244,69 @@ let state = {
 document.addEventListener("DOMContentLoaded", async () => {
   setupDateInputs();
   updateAuthUI();
+  setupNavigationEventListeners();
   await fetchApprovedTripsFromSupabase();
   renderTripGrid();
   renderServicesGrid();
   renderAdminTables();
   renderAdminList();
 });
+
+function setupNavigationEventListeners() {
+  const navDiscover = document.getElementById("nav-discover");
+  if (navDiscover) {
+    navDiscover.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("discover", e);
+    });
+  }
+
+  const navCreate = document.getElementById("nav-create");
+  if (navCreate) {
+    navCreate.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("create", e);
+    });
+  }
+
+  const navServices = document.getElementById("nav-services");
+  if (navServices) {
+    navServices.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("services", e);
+    });
+  }
+
+  const navAdmin = document.getElementById("nav-admin");
+  if (navAdmin) {
+    navAdmin.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("admin", e);
+    });
+  }
+
+  const navSignin = document.getElementById("nav-signin");
+  if (navSignin) {
+    navSignin.addEventListener("click", (e) => {
+      e.preventDefault();
+      showAuthModal("login", e);
+    });
+  }
+
+  document.querySelectorAll(".nav-brand").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("discover", e);
+    });
+  });
+
+  document.querySelectorAll(".btn-back").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateTo("discover", e);
+    });
+  });
+}
 
 // --- SUPABASE DATABASE QUERY FUNCTIONS ---
 
@@ -459,7 +516,12 @@ function updateAuthUI() {
   }
 }
 
-function toggleDemoRole() {
+function toggleDemoRole(event) {
+  const evt = event || (typeof window !== "undefined" ? window.event : null);
+  if (evt && typeof evt.preventDefault === "function") {
+    evt.preventDefault();
+  }
+
   if (!state.currentUser || state.currentUser.role !== "admin") {
     alert("Access Restricted: Only authenticated Administrators are authorized to access role switching.");
     return;
@@ -475,7 +537,12 @@ function toggleDemoRole() {
 }
 
 // --- SPA VIEW ROUTER ---
-async function navigateTo(viewId) {
+async function navigateTo(viewId, event) {
+  const evt = event || (typeof window !== "undefined" ? window.event : null);
+  if (evt && typeof evt.preventDefault === "function") {
+    evt.preventDefault();
+  }
+
   if (viewId === "admin") {
     if (!state.currentUser || !state.currentUser.isLoggedIn || state.currentUser.role !== "admin") {
       alert("Access Denied: You must be logged in as an Administrator to access the Admin Portal.");
@@ -1211,7 +1278,11 @@ function closeUserDropdown() {
 }
 
 // --- AUTH MODALS & LOGIN AS ADMIN ---
-function showAuthModal(tab = "login") {
+function showAuthModal(tab = "login", event) {
+  const evt = event || (typeof window !== "undefined" ? window.event : null);
+  if (evt && typeof evt.preventDefault === "function") {
+    evt.preventDefault();
+  }
   switchAuthTab(tab);
   document.getElementById("auth-modal").classList.add("open");
 }

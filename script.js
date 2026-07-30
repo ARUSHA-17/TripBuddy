@@ -200,7 +200,7 @@ let state = {
   searchQuery: "",
   activeView: "discover",
   selectedTripId: "WB-101",
-  createTripDestinations: ["Kandy", "Knuckles Range", "Riverston Peak"],
+  createTripDestinations: [],
   drafts: [
     { title: "Untitled Trip to Iceland", date: "Last edited 2 days ago" }
   ],
@@ -726,12 +726,7 @@ function renderDestinationsRouteList() {
   if (!container) return;
 
   if (!state.createTripDestinations || state.createTripDestinations.length === 0) {
-    container.innerHTML = `
-      <div style="padding: 1rem; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: #fafafa; color: var(--text-muted); font-size: 0.85rem;">
-        <i class="fa-solid fa-route" style="font-size: 1.2rem; color: var(--color-cyan); margin-bottom: 0.35rem; display: block;"></i>
-        No destinations added yet. Enter a location above and click "Add Stop" to build your route.
-      </div>
-    `;
+    container.innerHTML = "";
     return;
   }
 

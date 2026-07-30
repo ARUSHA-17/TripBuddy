@@ -47,37 +47,24 @@
 
       <div class="nav-actions">
         <!-- Notification Center Bell -->
-        <div class="nav-icon-btn" id="notif-btn" onclick="toggleNotifDrawer()">
+        <div class="nav-icon-btn" id="notif-bell" onclick="toggleNotifDrawer()">
           <i class="fa-regular fa-bell"></i>
-          <span class="notif-badge">3</span>
+          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
         </div>
 
-        <!-- Notification Drawer -->
-        <div class="notif-drawer" id="notif-drawer">
-          <div class="drawer-header">
-            <h4>Notifications</h4>
-            <span class="mark-read" onclick="clearNotifs()">Mark all as read</span>
+        <!-- Notifications Drawer -->
+        <div class="notif-drawer shadow-soft" id="notif-drawer">
+          <div class="flex-between mb-3 px-3 pt-3">
+            <h4 class="m-0">Notifications</h4>
+            <div class="flex-align gap-2">
+              <button class="btn btn-sm btn-outline" onclick="clearAllNotifications()">Clear All</button>
+              <button class="btn btn-sm btn-outline" onclick="openNotificationPrefsModal()"><i class="fa-solid fa-gear"></i></button>
+            </div>
           </div>
           <div class="notif-list">
-            <div class="notif-item unread" onclick="openChatModal('WB-101')">
-              <div class="notif-icon cyan"><i class="fa-solid fa-comments"></i></div>
+            <div class="notif-item">
               <div class="notif-content">
-                <p><strong>Sarah Jenkins</strong> sent a message in <em>Bali Spiritual Retreat</em></p>
-                <span class="notif-time">10 mins ago</span>
-              </div>
-            </div>
-            <div class="notif-item unread" onclick="navigateTo('profile')">
-              <div class="notif-icon gold"><i class="fa-solid fa-shield-halved"></i></div>
-              <div class="notif-content">
-                <p><strong>KYC Verification:</strong> Your NIC verification is approved!</p>
-                <span class="notif-time">1 hour ago</span>
-              </div>
-            </div>
-            <div class="notif-item" onclick="navigateTo('discover')">
-              <div class="notif-icon blue"><i class="fa-solid fa-map-location-dot"></i></div>
-              <div class="notif-content">
-                <p><strong>New Trip Alert:</strong> Swiss Alps Hiking Expedition matches your interest.</p>
-                <span class="notif-time">3 hours ago</span>
+                <p class="text-muted text-center py-3">No new notifications.</p>
               </div>
             </div>
           </div>
@@ -86,7 +73,8 @@
         <!-- User Profile Avatar & Dropdown -->
         <div class="user-avatar-wrapper" onclick="toggleUserDropdown()">
           <div class="user-avatar" id="nav-user-avatar">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="User Avatar" id="header-avatar-img">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="User Avatar" id="header-avatar-img" onerror="this.style.display='none'; document.getElementById('header-avatar-initials').style.display='flex';">
+            <div id="header-avatar-initials" class="avatar-initials" style="display: none; align-items: center; justify-content: center; background: var(--color-primary); color: white; width: 100%; height: 100%; border-radius: 50%; font-weight: bold; font-size: 1.2rem;"></div>
           </div>
           <div class="user-dropdown" id="user-dropdown">
             <div class="dropdown-header">
@@ -94,14 +82,13 @@
               <div class="dropdown-role" id="dropdown-user-role"><span class="badge-tag verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span></div>
             </div>
             <hr>
-            <a href="#" class="dropdown-item" onclick="navigateTo('profile', event)"><i class="fa-regular fa-user"></i> My Profile & Trips</a>
-            <a href="#" class="dropdown-item" onclick="navigateTo('public-profile', event)"><i class="fa-solid fa-address-card"></i> Public Profile View</a>
-            <a href="#" class="dropdown-item" onclick="navigateTo('security', event)"><i class="fa-solid fa-key"></i> Security Settings</a>
+            <a href="#" class="dropdown-item" onclick="navigateTo('profile', event)"><i class="fa-regular fa-user"></i> View Profile</a>
+            <a href="#" class="dropdown-item" onclick="navigateTo('security', event)"><i class="fa-solid fa-gear"></i> Settings</a>
             <a href="#" class="dropdown-item admin-only" id="dropdown-admin-item" onclick="navigateTo('admin', event)" style="display: none;"><i class="fa-solid fa-chart-line"></i> Admin Console</a>
             <!-- STRICT SECURITY RULE: Role switching hidden for regular users, admin-only -->
             <a href="#" class="dropdown-item admin-only" id="dropdown-switch-role-item" onclick="toggleDemoRole(event)" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Switch Role (<strong id="current-role-label">User</strong>)</a>
             <hr>
-            <a href="#" class="dropdown-item danger" onclick="handleLogout(event)"><i class="fa-solid fa-right-from-bracket"></i> Switch Account / Logout</a>
+            <a href="#" class="dropdown-item danger" onclick="confirmLogout(event)"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</a>
           </div>
         </div>
 
@@ -538,15 +525,34 @@
         <!-- Profile Header Card -->
         <div class="card profile-header-card mb-4">
           <div class="profile-avatar-container">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Alex Thorne" id="profile-main-img">
-            <button class="btn-avatar-edit" onclick="alert('Update Profile Image option selected.')"><i class="fa-solid fa-pencil"></i></button>
+            <img src="assets/images/default-avatar.png" alt="User Avatar" id="profile-main-img" onerror="this.style.display='none'; document.getElementById('profile-main-initials').style.display='flex';">
+            <div id="profile-main-initials" class="avatar-initials" style="display: none; align-items: center; justify-content: center; background: var(--color-primary); color: white; width: 100%; height: 100%; border-radius: 50%; font-weight: bold; font-size: 3rem;"></div>
+            <button class="btn-avatar-edit" onclick="document.getElementById('avatar-upload-input').click()"><i class="fa-solid fa-pencil"></i></button>
+            <input type="file" id="avatar-upload-input" accept="image/*" hidden onchange="handleAvatarUpload(event)">
           </div>
           <div class="profile-header-info">
-            <div class="title-with-badge">
-              <h2 id="profile-name-label">Alex Thorne</h2>
-              <span class="badge-tag verified-tag" id="profile-status-badge"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span>
+            <div class="title-with-badge" id="profile-name-container">
+              <h2 id="profile-name-label" style="display:inline-block; margin-right: 10px;"></h2>
+              <button class="btn-link micro text-muted" id="btn-edit-name" onclick="toggleNameEdit()"><i class="fa-solid fa-pen"></i></button>
+              <div id="profile-name-edit-form" style="display:none; align-items:center; gap:10px;">
+                <input type="text" id="profile-name-input" class="form-control" style="width: 250px;">
+                <button class="btn btn-sm btn-primary" onclick="saveNameEdit()">Save</button>
+                <button class="btn btn-sm btn-outline" onclick="toggleNameEdit()">Cancel</button>
+              </div>
+              <span class="badge-tag verified-tag" id="profile-status-badge" style="display: none;"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span>
             </div>
-            <p class="text-muted" id="profile-bio-label">Adventure enthusiast & cost-sharing expert. Exploring the world one bond at a time.</p>
+            
+            <div id="profile-bio-container" class="mt-2">
+              <p class="text-muted" id="profile-bio-label" style="display:inline-block; margin-right: 10px;"></p>
+              <button class="btn-link micro text-muted" id="btn-edit-bio" onclick="toggleBioEdit()"><i class="fa-solid fa-pen"></i></button>
+              <div id="profile-bio-edit-form" style="display:none; margin-top: 10px;">
+                <textarea id="profile-bio-input" class="form-control" rows="3" style="width: 100%; max-width: 500px;"></textarea>
+                <div class="mt-2">
+                  <button class="btn btn-sm btn-primary" onclick="saveBioEdit()">Save</button>
+                  <button class="btn btn-sm btn-outline" onclick="toggleBioEdit()">Cancel</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -557,43 +563,9 @@
             <button class="btn-link" onclick="navigateTo('create')">+ Create New Trip</button>
           </div>
 
-          <!-- Upcoming Trips -->
-          <div class="trip-section-block mb-3">
-            <span class="label-sub text-uppercase">Upcoming Trips</span>
-            <div class="my-trip-item mt-2">
-              <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=150&q=80" alt="Bali">
-              <div class="my-trip-info">
-                <h4>Bali Spiritual & Wellness Retreat</h4>
-                <span>Oct 12 - Oct 20, 2026</span>
-              </div>
-              <span class="badge-tag confirmed-tag">CONFIRMED</span>
-              <button class="btn btn-outline btn-sm ml-2" onclick="openChatModal('WB-101')">Open Group Chat</button>
-            </div>
-          </div>
-
-          <!-- Past Trips -->
-          <div class="trip-section-block mb-3">
-            <span class="label-sub text-uppercase">Past Trips</span>
-            <div class="my-trip-item mt-2">
-              <div class="my-trip-info">
-                <h4>Historical Sigiriya & Cultural Triangle</h4>
-                <span>Apr 10 - Apr 14, 2026</span>
-              </div>
-              <span class="badge-tag spots-tag micro">EXPIRED</span>
-              <button class="btn btn-outline btn-sm ml-2" onclick="openChatModal('WB-105')">View Read-Only Chat</button>
-            </div>
-          </div>
-
-          <!-- Drafts -->
-          <div class="trip-section-block">
-            <span class="label-sub text-uppercase">Saved Drafts</span>
-            <div class="my-trip-item mt-2" id="drafts-list-container">
-              <div class="my-trip-info">
-                <h4>Untitled Trip to Iceland</h4>
-                <span class="text-muted">Last edited 2 days ago</span>
-              </div>
-              <button class="btn btn-outline btn-sm" onclick="navigateTo('create')"><i class="fa-solid fa-pen-to-square"></i> Edit Draft</button>
-            </div>
+          <!-- User Trips & Drafts -->
+          <div id="my-trips-container">
+            <!-- Dynamically populated by JS -->
           </div>
         </div>
 
@@ -614,7 +586,7 @@
             <div class="form-row">
               <div class="form-group col-6">
                 <label class="form-label">Mobile Number</label>
-                <input type="text" class="form-control" id="kyc-phone" value="+94 77 123 4567" required>
+                <input type="tel" class="form-control" id="kyc-phone" placeholder="e.g. +94 77 123 4567" required>
               </div>
               <div class="form-group col-6">
                 <label class="form-label">NIC / Passport Number</label>
@@ -631,32 +603,36 @@
               <div class="form-group col-6">
                 <label class="form-label">Gender</label>
                 <div class="radio-group mt-1">
-                  <label><input type="radio" name="gender" value="Male" checked> Male</label>
+                  <label><input type="radio" name="gender" value="Male"> Male</label>
                   <label class="ml-3"><input type="radio" name="gender" value="Female"> Female</label>
                 </div>
               </div>
               <div class="form-group col-6">
                 <label class="form-label">Date of Birth</label>
-                <input type="date" class="form-control" id="kyc-dob" value="1995-08-15" required>
+                <input type="date" class="form-control" id="kyc-dob" required>
               </div>
             </div>
 
             <div class="form-group">
               <label class="form-label">DOCUMENT UPLOAD (NIC, LICENSE, OR PASSPORT)</label>
               <div class="upload-grid-2">
-                <div class="upload-box-mini">
+                <input type="file" id="upload-front-input" accept="image/*,.pdf" hidden onchange="updateUploadStatus('front')">
+                <div class="upload-box-mini" onclick="document.getElementById('upload-front-input').click()">
                   <i class="fa-solid fa-file-arrow-up"></i>
                   <span>Upload Front Side</span>
+                  <div id="upload-front-status" class="upload-status text-muted micro-note mt-1"></div>
                 </div>
-                <div class="upload-box-mini">
+                <input type="file" id="upload-back-input" accept="image/*,.pdf" hidden onchange="updateUploadStatus('back')">
+                <div class="upload-box-mini" onclick="document.getElementById('upload-back-input').click()">
                   <i class="fa-solid fa-file-arrow-up"></i>
                   <span>Upload Back Side</span>
+                  <div id="upload-back-status" class="upload-status text-muted micro-note mt-1"></div>
                 </div>
               </div>
               <p class="micro-note text-muted mt-2"><i class="fa-solid fa-circle-info"></i> Ensure document is clear and all details are legible.</p>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-shield-check"></i> Confirm & Boost Profile</button>
+            <button type="submit" class="btn btn-primary btn-block" id="verify-submit-btn"><i class="fa-solid fa-shield-check"></i> Submit for Verification</button>
           </form>
         </div>
 
@@ -671,7 +647,7 @@
               <i class="fa-solid fa-chevron-right text-muted"></i>
             </div>
           </div>
-          <div class="card card-clickable" onclick="alert('Notification Preferences: Email and SMS alerts enabled.')">
+          <div class="card card-clickable" onclick="openNotificationPrefsModal()">
             <div class="flex-between">
               <div class="flex-align gap-2">
                 <i class="fa-solid fa-bell text-accent"></i>
@@ -815,19 +791,11 @@
                 <h3>Feedbacks & Reviews</h3>
                 <span class="color-gold"><strong><i class="fa-solid fa-star"></i> 4.9</strong> (124 reviews)</span>
               </div>
-
-              <div class="reviews-list mt-3">
-                <div class="review-item">
-                  <div class="review-header">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" alt="Sarah Chen">
-                    <div>
-                      <strong>Sarah Chen</strong>
-                      <span class="text-muted micro d-block">Dolomites Expedition Co-traveler</span>
-                    </div>
-                    <div class="stars color-gold ml-auto"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-                  </div>
-                  <p class="review-text">"Alex is an excellent coordinator. The logistics for our Dolomites trip were flawless. Great co-traveler who knows how to keep morale high!"</p>
-                </div>
+              <!-- Placeholder for dynamic reviews -->
+              <div class="empty-state-card mt-3">
+                <i class="fa-solid fa-star color-muted"></i>
+                <h4 class="mt-2">No reviews yet</h4>
+                <p class="text-muted micro">Complete a trip with companions to earn reviews.</p>
               </div>
             </div>
           </div>
@@ -850,7 +818,7 @@
             <h3><i class="fa-solid fa-key text-accent"></i> Password Management</h3>
             <div class="form-group mt-3">
               <label class="form-label">Current Password</label>
-              <input type="password" class="form-control" value="••••••••" required>
+              <input type="password" class="form-control" required>
             </div>
             <div class="form-row">
               <div class="form-group col-6">
@@ -1214,9 +1182,9 @@
                     </label>
                   </div>
 
-                  <div class="form-group mb-3">
+                  <div class="form-group">
                     <label class="form-label">Announcement Banner Text</label>
-                    <input type="text" id="setting-banner-text" class="form-control" value="🔥 Summer Special: Instant cost-sharing verified for all new adventure trips!" placeholder="Enter announcement banner message...">
+                    <input type="text" id="setting-banner-text" class="form-control" placeholder="Enter announcement banner message...">
                   </div>
 
                   <div class="form-group mb-3">
@@ -1442,10 +1410,10 @@
         <!-- Chat Left Sidebar -->
         <div class="chat-sidebar">
           <div class="chat-trip-preview">
-            <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=300&q=80" alt="Trip Banner" id="chat-modal-trip-img">
+            <img src="assets/images/placeholder.jpg" alt="Trip Banner" id="chat-modal-trip-img">
             <div class="mt-2">
-              <h4 id="chat-modal-trip-title">Bali Spiritual & Wellness</h4>
-              <span class="micro text-muted" id="chat-modal-trip-sub"><i class="fa-solid fa-location-dot"></i> Ubud, Indonesia</span>
+              <h4 id="chat-modal-trip-title">Loading...</h4>
+              <span class="micro text-muted" id="chat-modal-trip-sub"><i class="fa-solid fa-location-dot"></i> Loading...</span>
             </div>
           </div>
 
@@ -1634,6 +1602,35 @@
           <button type="button" class="btn btn-outline" onclick="closeEditTripModal()">Cancel</button>
           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
         </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PREFS MODAL -->
+  <div class="modal-backdrop" id="notif-prefs-modal">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeNotificationPrefsModal()"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header-custom">
+        <h2>Notification Preferences</h2>
+        <p class="text-muted">Manage how we contact you.</p>
+      </div>
+      <form onsubmit="saveNotificationPrefs(event)" class="mt-3">
+        <div class="form-group mb-3">
+          <label class="flex-align gap-2">
+            <input type="checkbox" id="pref-email"> Email Notifications (Trip updates, chat alerts)
+          </label>
+        </div>
+        <div class="form-group mb-3">
+          <label class="flex-align gap-2">
+            <input type="checkbox" id="pref-sms"> SMS Notifications (Urgent verification & security alerts)
+          </label>
+        </div>
+        <div class="form-group mb-4">
+          <label class="flex-align gap-2">
+            <input type="checkbox" id="pref-push"> Push / In-App Notifications
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Save Preferences</button>
       </form>
     </div>
   </div>

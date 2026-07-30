@@ -14,196 +14,17 @@ if (typeof window !== 'undefined' && window.supabase && window.supabase.createCl
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-const initialTrips = [
-  {
-    id: "WB-101",
-    title: "Bali Spiritual Retreat & Exploration",
-    category: "Adventure",
-    cover: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
-    price: "LKR 185,000",
-    priceRaw: 185000,
-    badge: "VERIFIED HOST",
-    badgeClass: "verified-tag",
-    days: 10,
-    startDate: "2026-10-12",
-    endDate: "2026-10-22",
-    languages: "English, Sinhala",
-    host: "Sarah Jenkins",
-    hostAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
-    hostBio: "Professional Yoga Instructor • 14 trips hosted",
-    location: "Ubud, Indonesia",
-    quotas: "2 Males, 2 Females",
-    vehicle: "Private Luxury Van",
-    description: "Reconnect with your inner self in the heart of Ubud. This 10-day spiritual retreat is designed for those seeking a balance between high-altitude adventure and deep meditative practices. We'll start our days with sunrise yoga overlooking the Tegallalang Rice Terrace and end them with traditional Balinese sound healing ceremonies.",
-    status: "approved"
-  },
-  {
-    id: "WB-102",
-    title: "Amalfi Coast Luxury Escape & Sailing",
-    category: "Beach",
-    cover: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
-    price: "LKR 420,000",
-    priceRaw: 420000,
-    badge: "NEW HOST",
-    badgeClass: "new-tag",
-    days: 7,
-    startDate: "2026-11-05",
-    endDate: "2026-11-12",
-    languages: "English, Italian",
-    host: "Sarah Chen",
-    hostAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-    hostBio: "Coastal photographer & sailing enthusiast",
-    location: "Positano, Italy",
-    quotas: "1 Male, 3 Females",
-    vehicle: "Chartered Yacht & Convertible",
-    description: "Cruise along Italy's breathtaking coastline, explore cliffside towns, sample authentic seafood, and swim in azure waters.",
-    status: "approved"
-  },
-  {
-    id: "WB-103",
-    title: "Swiss Alps Hiking Expedition",
-    category: "Mountain",
-    cover: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=800&q=80",
-    price: "LKR 245,000",
-    priceRaw: 245000,
-    badge: "VERIFIED HOST",
-    badgeClass: "verified-tag",
-    days: 8,
-    startDate: "2026-12-20",
-    endDate: "2026-12-28",
-    languages: "English, German",
-    host: "Mark J.",
-    hostAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-    hostBio: "Alpine guide & winter sports expert",
-    location: "Zermatt, Switzerland",
-    quotas: "3 Males, 1 Female",
-    vehicle: "Alpine Railway & 4x4 SUV",
-    description: "High-altitude winter expedition featuring glacier walks, cozy chalets, fondue nights, and panoramic views of the Matterhorn.",
-    status: "approved"
-  },
-  {
-    id: "WB-104",
-    title: "Knuckles Cloud Forest Camping Trek",
-    category: "Adventure",
-    cover: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-    price: "LKR 45,000",
-    priceRaw: 45000,
-    badge: "VERIFIED HOST",
-    badgeClass: "verified-tag",
-    days: 3,
-    startDate: "2026-08-15",
-    endDate: "2026-08-18",
-    languages: "Sinhala, English",
-    host: "Alex Thorne",
-    hostAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-    hostBio: "Experienced local mountaineer",
-    location: "Kandy, Sri Lanka",
-    quotas: "2 Males, 2 Females",
-    vehicle: "Private 4WD Jeep",
-    description: "Immerse yourself in UNESCO World Heritage forest reserves. Hike through mist-covered peaks, hidden waterfalls, and remote villages.",
-    status: "approved"
-  },
-  {
-    id: "WB-105",
-    title: "Historical Sigiriya & Cultural Triangle",
-    category: "Cultural",
-    cover: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80",
-    price: "LKR 55,000",
-    priceRaw: 55000,
-    badge: "VERIFIED HOST",
-    badgeClass: "verified-tag",
-    days: 4,
-    startDate: "2026-04-10",
-    endDate: "2026-04-14",
-    languages: "English, Sinhala",
-    host: "Anura Kumara",
-    hostAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-    hostBio: "Certified wildlife tracker and historical guide",
-    location: "Sigiriya & Dambulla, LK",
-    quotas: "2 Males, 2 Females",
-    vehicle: "Air-Conditioned Minivan",
-    description: "Explore the ancient rock fortress of Sigiriya, Dambulla Cave Temples, and Habarana elephant safaris with an expert local host.",
-    status: "approved"
-  },
-  {
-    id: "WB-106",
-    title: "Southern Coast Surf & Coastal Drive",
-    category: "Road trip",
-    cover: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
-    price: "LKR 65,000",
-    priceRaw: 65000,
-    badge: "NEW HOST",
-    badgeClass: "new-tag",
-    days: 4,
-    startDate: "2026-09-01",
-    endDate: "2026-09-05",
-    languages: "Sinhala, English",
-    host: "Nipuni Silva",
-    hostAvatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
-    hostBio: "Surf instructor & road trip host",
-    location: "Mirissa to Ahangama, LK",
-    quotas: "2 Males, 2 Females",
-    vehicle: "Open Roof Beach Convertible Van",
-    description: "Catch waves along Hiriketiya, whale watching in Mirissa, and sunset beach bonfires with co-travelers.",
-    status: "approved"
-  }
-];
-
-const serviceProviders = [
-  {
-    id: "PRO-8821",
-    name: "Anura Kumara",
-    type: "Tour Guide",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-    contact: "+94 77 123 4567",
-    email: "anura.guide@mail.lk",
-    location: "Central Province & Sigiriya",
-    rating: 4.9,
-    reviews: 86,
-    status: "VERIFIED",
-    badgeClass: "verified-tag",
-    description: "Certified wildlife tracker and historical guide with 12 years of experience leading Knuckles & Sigiriya expeditions."
-  },
-  {
-    id: "PRO-1029",
-    name: "Island Vista Travels & Villas",
-    type: "Hotel",
-    avatar: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=150&q=80",
-    contact: "+94 11 288 8999",
-    email: "reservations@islandvista.com",
-    location: "Ella & Nuwara Eliya",
-    rating: 4.8,
-    reviews: 142,
-    status: "VERIFIED",
-    badgeClass: "verified-tag",
-    description: "Eco-friendly boutique villas providing group discounts and host meal packages for companion groups."
-  },
-  {
-    id: "PRO-4432",
-    name: "Rohan Samaraweera Fleet Renders",
-    type: "Vehicle Render",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
-    contact: "+94 71 455 5111",
-    email: "rohan.fleet@service.lk",
-    location: "Islandwide Delivery",
-    rating: 5.0,
-    reviews: 98,
-    status: "VERIFIED",
-    badgeClass: "verified-tag",
-    description: "Provides 14-seater luxury KDH vans, 4WD Montero SUVs, and self-drive options with full insurance coverage."
-  }
-];
+const initialTrips = [];
+const serviceProviders = [];
 
 let state = {
-  trips: [...initialTrips],
+  trips: [],
   selectedCategory: "all",
   searchQuery: "",
-  activeView: "discover",
-  selectedTripId: "WB-101",
+  activeView: localStorage.getItem("activeTab") || "discover",
+  selectedTripId: null,
   createTripDestinations: [],
-  drafts: [
-    { title: "Untitled Trip to Iceland", date: "Last edited 2 days ago" }
-  ],
+  drafts: [],
   currentUser: {
     id: null,
     name: "Guest",
@@ -213,64 +34,27 @@ let state = {
     status: "none"
   },
   bookmarks: [],
-  comments: {
-    "WB-101": [
-      { id: "c1", user: "Elena", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80", text: "Looking forward to this retreat! Are yoga mats provided?", time: "2 days ago" },
-      { id: "c2", user: "Mark J.", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80", text: "Can't wait for the water purification ritual at Tirta Empul.", time: "1 day ago" }
-    ],
-    "WB-104": [
-      { id: "c3", user: "Nipuni", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80", text: "What gear is required for Knuckles forest camping?", time: "3 hours ago" }
-    ]
-  },
-  pendingUsers: [
-    { id: "USR-9901", name: "David Thompson", email: "david.t@example.com", dob: "05 May 1975", phone: "+44 7700 900123", role: "user", status: "pending_approval", registerDate: "2026-07-29" },
-    { id: "USR-9902", name: "Jessica Lee", email: "jessica.l@example.com", dob: "18 Aug 1992", phone: "+1 202 555 0128", role: "user", status: "pending_approval", registerDate: "2026-07-30" }
-  ],
-  adminUsers: [
-    { id: "ADM-001", name: "Primary System Admin", email: "admin@tripbuddy.com", role: "Primary Admin", addedDate: "2026-01-01" },
-    { id: "ADM-002", name: "Sarah Jenkins", email: "sarah.admin@tripbuddy.com", role: "Moderator Admin", addedDate: "2026-03-15" }
-  ],
-  allUsers: [
-    { id: "USR-1001", name: "Alex Thorne", email: "alex.thorne@example.com", dob: "1994-08-12", phone: "+94 77 123 4567", role: "user", status: "approved", registerDate: "2026-01-10" },
-    { id: "USR-1002", name: "Sarah Jenkins", email: "sarah.admin@tripbuddy.com", dob: "1990-03-25", phone: "+94 71 888 9999", role: "admin", status: "approved", registerDate: "2026-02-14" },
-    { id: "USR-9901", name: "David Thompson", email: "david.t@example.com", dob: "1975-05-05", phone: "+44 7700 900123", role: "user", status: "pending_approval", registerDate: "2026-07-29" },
-    { id: "USR-9902", name: "Jessica Lee", email: "jessica.l@example.com", dob: "1992-08-18", phone: "+1 202 555 0128", role: "user", status: "pending_approval", registerDate: "2026-07-30" },
-    { id: "USR-1005", name: "Mark Johnston", email: "mark.j@example.com", dob: "1988-11-02", phone: "+41 44 666 7788", role: "user", status: "suspended", registerDate: "2026-03-01" },
-    { id: "ADM-001", name: "Primary System Admin", email: "admin@tripbuddy.com", dob: "1985-01-01", phone: "+94 11 234 5678", role: "admin", status: "approved", registerDate: "2026-01-01" }
-  ],
+  comments: {},
+  pendingUsers: [],
+  adminUsers: [],
+  allUsers: [],
   siteSettings: {
     allowRegistrations: true,
     enableBanner: true,
-    bannerText: "🔥 Summer Special: Instant cost-sharing verified for all new adventure trips!",
+    bannerText: "Welcome to TripBuddy! Start planning your next adventure today.",
     maintenanceMode: false
   },
   userFilterTab: "all",
-  chats: {
-    "WB-101": [
-      { sender: "Sarah Jenkins (Host)", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80", text: "Hey tribe! I've finalized the itinerary for our first day in Ubud. We'll start with a sunrise meditation at Tirta Empul Temple.", time: "09:12 AM", isHost: true },
-      { sender: "You (Alex)", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80", text: "That sounds amazing! Do we need to bring our own sarongs or are they provided?", time: "09:15 AM", isHost: false },
-      { sender: "Elena", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80", text: "I was wondering the same thing! Also, are hiking sandals recommended?", time: "09:18 AM", isHost: false },
-      { sender: "Sarah Jenkins (Host)", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80", text: "They are provided at the temple entrance! Standard walking sandals work great.", time: "09:22 AM", isHost: true }
-    ],
-    "WB-102": [
-      { sender: "Sarah Chen (Host)", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80", text: "Welcome to the Amalfi Coast Sailing group! Please bring non-marking deck shoes for the yacht.", time: "10:00 AM", isHost: true }
-    ],
-    "WB-103": [
-      { sender: "Mark J. (Host)", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80", text: "Greetings alpine hikers! Make sure thermal layers and waterproof boots are packed for Zermatt.", time: "08:30 AM", isHost: true }
-    ],
-    "WB-104": [
-      { sender: "Alex Thorne (Host)", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80", text: "Welcome campers! Knuckles trek leaves at 6:00 AM from Kandy town.", time: "07:00 AM", isHost: true }
-    ],
-    "WB-105": [
-      { sender: "Anura Kumara (Host)", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80", text: "This trip concluded on April 14, 2026. Thank you to all who participated!", time: "06:00 PM", isHost: true }
-    ]
-  }
+  chats: {}
 };
 
 // --- INITIALIZATION ---
 document.addEventListener("DOMContentLoaded", async () => {
+  document.body.insertAdjacentHTML('afterbegin', '<div id="global-loader" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg-dark);z-index:9999;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-spinner fa-spin fa-3x color-primary"></i><p style="margin-left:10px;">Checking session...</p></div>');
+  
+  await initSupabaseAuthListener();
+  
   setupDateInputs();
-  initSupabaseAuthListener();
   updateAuthUI();
   setupNavigationEventListeners();
   renderDestinationsRouteList();
@@ -281,33 +65,38 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderAdminTables();
   renderAdminList();
   initAdminCharts();
+  
+  removeLoaderAndNavigate();
 });
 
-function initSupabaseAuthListener() {
+function removeLoaderAndNavigate() {
+  const loader = document.getElementById("global-loader");
+  if (loader) loader.remove();
+  if (state.activeView) navigateTo(state.activeView);
+}
+
+async function initSupabaseAuthListener() {
   if (supabaseClient) {
     try {
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session && session.user) {
-          handleSupabaseAuthUser(session.user);
-        } else {
-          state.currentUser = {
-            id: null,
-            name: "Guest",
-            email: "",
-            role: "user",
-            isLoggedIn: false,
-            status: "none"
-          };
-          updateAuthUI();
-        }
-      }).catch(err => {
-        console.warn("Error getting session:", err);
-        updateAuthUI();
-      });
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      
+      if (session && session.user) {
+        await handleSupabaseAuthUser(session.user);
+      } else {
+        state.currentUser = {
+          id: null,
+          name: "Guest",
+          email: "",
+          role: "user",
+          isLoggedIn: false,
+          status: "none"
+        };
+      }
 
-      supabaseClient.auth.onAuthStateChange((event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          handleSupabaseAuthUser(session.user);
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          await handleSupabaseAuthUser(session.user);
+          updateAuthUI();
         } else if (event === 'SIGNED_OUT') {
           state.currentUser = {
             id: null,
@@ -322,10 +111,24 @@ function initSupabaseAuthListener() {
       });
     } catch (err) {
       console.warn("Supabase auth listener init error:", err);
-      updateAuthUI();
+      state.currentUser = {
+        id: null,
+        name: "Guest",
+        email: "",
+        role: "user",
+        isLoggedIn: false,
+        status: "none"
+      };
     }
   } else {
-    updateAuthUI();
+    state.currentUser = {
+      id: null,
+      name: "Guest",
+      email: "",
+      role: "user",
+      isLoggedIn: false,
+      status: "none"
+    };
   }
 }
 
@@ -359,7 +162,9 @@ async function handleSupabaseAuthUser(user) {
   const metadata = user.user_metadata || {};
   let status = metadata.status || "approved";
   let role = metadata.role || "user";
-  let name = metadata.full_name || metadata.name || user.email.split("@")[0];
+  let name = metadata.full_name || metadata.display_name || metadata.name;
+  let bio = metadata.bio || "";
+  let avatar_url = metadata.avatar_url || "assets/images/default-avatar.png";
 
   if (supabaseClient) {
     try {
@@ -367,12 +172,16 @@ async function handleSupabaseAuthUser(user) {
       if (profile) {
         if (profile.status) status = profile.status;
         if (profile.role) role = profile.role;
-        if (profile.full_name) name = profile.full_name;
+        if (profile.full_name || profile.display_name) name = profile.full_name || profile.display_name;
+        if (profile.bio) bio = profile.bio;
+        if (profile.avatar_url) avatar_url = profile.avatar_url;
       }
     } catch (err) {
-      console.warn("Error checking profile:", err);
+      console.warn("Supabase profile fetch fallback:", err);
     }
   }
+
+  if (!name) name = user.email ? user.email.split("@")[0] : "Guest";
 
   if (status === "pending_approval") {
     if (supabaseClient) {
@@ -390,6 +199,8 @@ async function handleSupabaseAuthUser(user) {
     email: user.email,
     role: role,
     status: status,
+    bio: bio,
+    avatar_url: avatar_url,
     isLoggedIn: true
   };
   updateAuthUI();
@@ -455,6 +266,11 @@ function setupNavigationEventListeners() {
 
 // 1. Fetch only approved trips from Supabase for public discover rendering
 async function fetchApprovedTripsFromSupabase() {
+  const container = document.getElementById("discover-trips-container");
+  if (container) {
+    container.innerHTML = '<div style="text-align: center; padding: 3rem;"><i class="fa-solid fa-spinner fa-spin fa-2x color-primary"></i><p class="mt-2">Loading latest adventures...</p></div>';
+  }
+
   if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
     try {
       const { data, error } = await supabaseClient
@@ -462,7 +278,11 @@ async function fetchApprovedTripsFromSupabase() {
         .select('*')
         .eq('status', 'approved');
 
-      if (!error && data && data.length > 0) {
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
         state.trips = data.map(t => ({
           id: t.id,
           title: t.title,
@@ -485,10 +305,83 @@ async function fetchApprovedTripsFromSupabase() {
           description: t.description,
           status: t.status || "approved"
         }));
+      } else {
+        state.trips = [];
       }
     } catch (err) {
-      console.warn("Supabase approved trips query fallback:", err);
+      console.error("Supabase approved trips query error:", err);
+      showToast("Failed to load community trips. Please try again later.", "error");
     }
+  }
+}
+
+async function fetchUserTripsFromSupabase(userId) {
+  const container = document.getElementById("my-trips-container");
+  if (!container || !userId) return;
+  
+  container.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin color-primary"></i> Loading your trips...</div>';
+
+  if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
+    try {
+      const { data, error } = await supabaseClient
+        .from('trips')
+        .select('*')
+        .eq('user_id', userId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const userTrips = data.map(t => ({
+            id: t.id,
+            title: t.title,
+            cover: t.cover,
+            startDate: t.start_date,
+            endDate: t.end_date,
+            status: t.status
+        }));
+        container.innerHTML = userTrips.map(trip => `
+          <div class="my-trip-item mt-2">
+            <img src="${trip.cover || 'assets/images/placeholder.jpg'}" alt="${trip.title}">
+            <div class="my-trip-info">
+              <h4>${trip.title}</h4>
+              <span>${trip.startDate} - ${trip.endDate}</span>
+            </div>
+            <span class="badge-tag ${trip.status === 'approved' ? 'confirmed-tag' : 'warning-tag'}">${(trip.status || 'Draft').toUpperCase()}</span>
+            <button class="btn btn-outline btn-sm ml-2" onclick="openChatModal('${trip.id}')">Open Chat</button>
+          </div>
+        `).join("");
+      } else {
+        container.innerHTML = `
+          <div class="empty-state-card">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <h3>No upcoming trips yet.</h3>
+            <p>Click '+ Create New' to plan your first adventure!</p>
+            <p class="mt-2 text-muted micro-note">No saved drafts found.</p>
+          </div>
+        `;
+      }
+    } catch (err) {
+      console.error("Supabase user trips fetch error:", err);
+      showToast("Could not load your trips.", "error");
+      container.innerHTML = `
+        <div class="empty-state-card">
+          <i class="fa-solid fa-circle-exclamation color-danger"></i>
+          <h3>Failed to load trips</h3>
+          <p>We encountered an error. Please refresh the page.</p>
+        </div>
+      `;
+    }
+  } else {
+     container.innerHTML = `
+        <div class="empty-state-card">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <h3>No upcoming trips yet.</h3>
+          <p>Click '+ Create New' to plan your first adventure!</p>
+          <p class="mt-2 text-muted micro-note">No saved drafts found.</p>
+        </div>
+      `;
   }
 }
 
@@ -521,9 +414,10 @@ async function insertTripToSupabase(newTripObj) {
           description: newTripObj.description,
           status: 'pending_approval'
         }]);
-      if (error) console.error("Supabase insert error:", error);
+      if (error) throw error;
     } catch (err) {
-      console.warn("Supabase insert trip fallback:", err);
+      console.error("Supabase insert error:", err);
+      showToast("Failed to save the trip to the server.", "error");
     }
   }
 }
@@ -688,6 +582,70 @@ function updateAuthUI() {
       userRoleEl.innerHTML = `<span class="badge-tag warning-tag"><i class="fa-solid fa-user"></i> Not Signed In</span>`;
     }
   }
+
+  // Update Profile View Elements
+  const profileNameLabel = document.getElementById("profile-name-label");
+  const profileBioLabel = document.getElementById("profile-bio-label");
+  const profileMainImg = document.getElementById("profile-main-img");
+  const headerAvatarImg = document.getElementById("header-avatar-img");
+  const profileStatusBadge = document.getElementById("profile-status-badge");
+
+  const headerAvatarInitials = document.getElementById("header-avatar-initials");
+  const profileMainInitials = document.getElementById("profile-main-initials");
+
+  if (isLoggedIn) {
+    if (profileNameLabel) profileNameLabel.innerText = state.currentUser.name;
+    if (profileBioLabel) profileBioLabel.innerText = state.currentUser.bio || "Update your bio to tell travelers about yourself.";
+    
+    const initials = state.currentUser.name ? state.currentUser.name.substring(0, 2).toUpperCase() : "U";
+    if (state.currentUser.avatar_url && !state.currentUser.avatar_url.includes('default-avatar.png')) {
+      if (profileMainImg) {
+        profileMainImg.src = state.currentUser.avatar_url;
+        profileMainImg.style.display = "block";
+        if (profileMainInitials) profileMainInitials.style.display = "none";
+      }
+      if (headerAvatarImg) {
+        headerAvatarImg.src = state.currentUser.avatar_url;
+        headerAvatarImg.style.display = "block";
+        if (headerAvatarInitials) headerAvatarInitials.style.display = "none";
+      }
+    } else {
+      if (profileMainImg) profileMainImg.style.display = "none";
+      if (profileMainInitials) {
+        profileMainInitials.innerText = initials;
+        profileMainInitials.style.display = "flex";
+      }
+      if (headerAvatarImg) headerAvatarImg.style.display = "none";
+      if (headerAvatarInitials) {
+        headerAvatarInitials.innerText = initials;
+        headerAvatarInitials.style.display = "flex";
+      }
+    }
+    
+    if (profileStatusBadge) profileStatusBadge.style.display = "inline-flex";
+    
+    // Fetch and render user trips
+    fetchUserTripsFromSupabase(state.currentUser.id);
+  } else {
+    if (profileNameLabel) profileNameLabel.innerText = "Guest";
+    if (profileBioLabel) profileBioLabel.innerText = "";
+    
+    if (profileMainImg) profileMainImg.style.display = "none";
+    if (profileMainInitials) {
+      profileMainInitials.innerText = "G";
+      profileMainInitials.style.display = "flex";
+    }
+    if (headerAvatarImg) headerAvatarImg.style.display = "none";
+    if (headerAvatarInitials) {
+      headerAvatarInitials.innerText = "G";
+      headerAvatarInitials.style.display = "flex";
+    }
+    
+    if (profileStatusBadge) profileStatusBadge.style.display = "none";
+    
+    const tripsContainer = document.getElementById("my-trips-container");
+    if (tripsContainer) tripsContainer.innerHTML = "";
+  }
 }
 
 function toggleDemoRole(event) {
@@ -734,6 +692,7 @@ async function navigateTo(viewId, event) {
   }
 
   state.activeView = viewId;
+  localStorage.setItem("activeTab", viewId);
   
   document.querySelectorAll(".view-section").forEach(sec => {
     sec.classList.remove("active");
@@ -780,11 +739,10 @@ async function renderTripGrid() {
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: white; border-radius: 16px; border: 1px solid #e2e8f0;">
-        <i class="fa-solid fa-compass" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 1rem;"></i>
-        <h3>No matching verified trips found</h3>
-        <p class="text-muted">Try clearing your search query or selecting another category.</p>
-        <button class="btn btn-outline mt-3" onclick="selectCategory('all', document.querySelector('.filter-pill'))">Reset Filters</button>
+      <div class="empty-state-card" style="grid-column: 1 / -1;">
+        <i class="fa-solid fa-compass"></i>
+        <h3>No community trips published yet.</h3>
+        <p>Try clearing your search query or selecting another category.</p>
       </div>
     `;
     return;
@@ -1362,15 +1320,57 @@ function toggleVerificationForm() {
   form.style.display = form.style.display === "none" ? "block" : "none";
 }
 
-function handleKYCSubmit(e) {
+async function handleKYCSubmit(e) {
   e.preventDefault();
+  
+  const submitBtn = document.getElementById("verify-submit-btn");
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+  }
+
   const nic = document.getElementById("kyc-nic").value;
+  const frontFile = document.getElementById("upload-front-input").files[0];
+  const backFile = document.getElementById("upload-back-input").files[0];
 
-  document.getElementById("profile-status-badge").className = "badge-tag verified-tag";
-  document.getElementById("profile-status-badge").innerHTML = `<i class="fa-solid fa-shield-check"></i> Verified Traveler (KYC Approved)`;
+  try {
+    if (supabaseClient && frontFile && state.currentUser && state.currentUser.id) {
+      const frontPath = `${state.currentUser.id}/front_${Date.now()}_${frontFile.name}`;
+      const { error: frontErr } = await supabaseClient.storage.from('verification-docs').upload(frontPath, frontFile);
+      if (frontErr) throw frontErr;
+    }
 
-  alert(`Verification Details (NIC: ${nic}) submitted for admin review.`);
-  toggleVerificationForm();
+    if (supabaseClient && backFile && state.currentUser && state.currentUser.id) {
+      const backPath = `${state.currentUser.id}/back_${Date.now()}_${backFile.name}`;
+      const { error: backErr } = await supabaseClient.storage.from('verification-docs').upload(backPath, backFile);
+      if (backErr) throw backErr;
+    }
+
+    // Update profile verification status
+    if (supabaseClient && state.currentUser && state.currentUser.id) {
+      await supabaseClient.from('profiles').update({ verification_status: 'pending' }).eq('id', state.currentUser.id);
+    }
+
+    showToast(`Verification Details (NIC: ${nic}) submitted for admin review.`, "success");
+    toggleVerificationForm();
+  } catch (err) {
+    console.error("KYC Upload Error:", err);
+    showToast("Failed to upload verification documents. Please try again.", "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Submit for Verification';
+    }
+  }
+}
+
+function updateUploadStatus(side) {
+  const input = document.getElementById(`upload-${side}-input`);
+  const statusEl = document.getElementById(`upload-${side}-status`);
+  if (input && input.files && input.files[0] && statusEl) {
+    statusEl.innerText = `${side === 'front' ? 'Front' : 'Back'} side uploaded: ${input.files[0].name}`;
+    statusEl.className = "upload-status success mt-1";
+  }
 }
 
 function handlePasswordUpdate(e) {
@@ -2110,10 +2110,23 @@ function closeNotifDrawer() {
   if (d) d.classList.remove("open");
 }
 
-function clearNotifs() {
-  document.querySelectorAll(".notif-item").forEach(item => item.classList.remove("unread"));
-  const badge = document.querySelector(".notif-badge");
-  if (badge) badge.style.display = "none";
+function updateNotificationBadge(count) {
+  const badge = document.getElementById("notif-badge");
+  if (!badge) return;
+  if (count > 0) {
+    badge.innerText = count;
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function clearAllNotifications() {
+  const notifList = document.querySelector(".notif-list");
+  if (notifList) {
+    notifList.innerHTML = '<div class="notif-item"><div class="notif-content"><p class="text-muted text-center py-3">No new notifications.</p></div></div>';
+  }
+  updateNotificationBadge(0);
 }
 
 function toggleUserDropdown() {
@@ -2390,24 +2403,225 @@ async function handleLogout(e) {
   if (evt && typeof evt.preventDefault === "function") {
     evt.preventDefault();
   }
-
+  
   if (supabaseClient) {
     try {
       await supabaseClient.auth.signOut();
     } catch (err) {
-      console.warn("Supabase signOut error:", err);
+      console.warn("Logout warning:", err);
     }
   }
-
+  
   state.currentUser = {
+    id: null,
     name: "Guest",
     email: "",
     role: "user",
     isLoggedIn: false,
     status: "none"
   };
-
+  
+  localStorage.removeItem("activeTab");
   showToast("Logged out successfully.", "info");
   updateAuthUI();
   navigateTo("discover");
 }
+
+// --- NOTIFICATION PREFERENCES ---
+function openNotificationPrefsModal() {
+  const modal = document.getElementById("notif-prefs-modal");
+  if (modal) {
+    // Attempt to load existing preferences if available
+    if (state.currentUser && state.currentUser.id && supabaseClient) {
+      supabaseClient.from('profiles').select('notification_preferences').eq('id', state.currentUser.id).single()
+      .then(({data}) => {
+         if (data && data.notification_preferences) {
+           const prefs = data.notification_preferences;
+           document.getElementById("pref-email").checked = !!prefs.email;
+           document.getElementById("pref-sms").checked = !!prefs.sms;
+           document.getElementById("pref-push").checked = !!prefs.push;
+         }
+      }).catch(err => console.warn("Failed to fetch notification prefs", err));
+    }
+    modal.classList.add("active");
+  }
+}
+
+function closeNotificationPrefsModal() {
+  const modal = document.getElementById("notif-prefs-modal");
+  if (modal) modal.classList.remove("active");
+}
+
+async function saveNotificationPrefs(e) {
+  e.preventDefault();
+  const prefs = {
+    email: document.getElementById("pref-email").checked,
+    sms: document.getElementById("pref-sms").checked,
+    push: document.getElementById("pref-push").checked
+  };
+
+  if (state.currentUser && state.currentUser.id && supabaseClient) {
+    try {
+      await supabaseClient.from('profiles').update({ notification_preferences: prefs }).eq('id', state.currentUser.id);
+      showToast("Notification preferences saved successfully.", "success");
+    } catch (err) {
+      console.error("Error saving preferences:", err);
+      showToast("Failed to save notification preferences.", "error");
+    }
+  } else {
+    // Local fallback
+    showToast("Notification preferences updated (Local mode).", "success");
+  }
+  closeNotificationPrefsModal();
+}
+
+// --- PROFILE EDITING (NAME & BIO) ---
+function toggleNameEdit() {
+  const label = document.getElementById("profile-name-label");
+  const form = document.getElementById("profile-name-edit-form");
+  const btn = document.getElementById("btn-edit-name");
+  
+  if (form.style.display === "none") {
+    document.getElementById("profile-name-input").value = state.currentUser.name;
+    form.style.display = "flex";
+    label.style.display = "none";
+    btn.style.display = "none";
+  } else {
+    form.style.display = "none";
+    label.style.display = "inline-block";
+    btn.style.display = "inline-block";
+  }
+}
+
+async function saveNameEdit() {
+  const newName = document.getElementById("profile-name-input").value.trim();
+  if (!newName) return;
+  
+  if (state.currentUser && state.currentUser.id && supabaseClient) {
+    try {
+      await supabaseClient.from('profiles').update({ full_name: newName }).eq('id', state.currentUser.id);
+      
+      // Update metadata too
+      await supabaseClient.auth.updateUser({
+        data: { full_name: newName }
+      });
+      
+      state.currentUser.name = newName;
+      updateAuthUI();
+      showToast("Profile name updated successfully!", "success");
+      toggleNameEdit();
+    } catch (err) {
+      console.error("Error updating name:", err);
+      showToast("Failed to update name.", "error");
+    }
+  } else {
+    state.currentUser.name = newName;
+    updateAuthUI();
+    showToast("Profile name updated (Local).", "success");
+    toggleNameEdit();
+  }
+}
+
+function toggleBioEdit() {
+  const label = document.getElementById("profile-bio-label");
+  const form = document.getElementById("profile-bio-edit-form");
+  const btn = document.getElementById("btn-edit-bio");
+  
+  if (form.style.display === "none") {
+    document.getElementById("profile-bio-input").value = state.currentUser.bio || "";
+    form.style.display = "block";
+    label.style.display = "none";
+    btn.style.display = "none";
+  } else {
+    form.style.display = "none";
+    label.style.display = "inline-block";
+    btn.style.display = "inline-block";
+  }
+}
+
+async function saveBioEdit() {
+  const newBio = document.getElementById("profile-bio-input").value.trim();
+  
+  if (state.currentUser && state.currentUser.id && supabaseClient) {
+    try {
+      await supabaseClient.from('profiles').update({ bio: newBio }).eq('id', state.currentUser.id);
+      
+      state.currentUser.bio = newBio;
+      updateAuthUI();
+      showToast("Bio updated successfully!", "success");
+      toggleBioEdit();
+    } catch (err) {
+      console.error("Error updating bio:", err);
+      showToast("Failed to update bio.", "error");
+    }
+  } else {
+    state.currentUser.bio = newBio;
+    updateAuthUI();
+    showToast("Bio updated (Local).", "success");
+    toggleBioEdit();
+  }
+}
+
+// --- AVATAR UPLOAD ---
+async function handleAvatarUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  if (!state.currentUser || !state.currentUser.id || !supabaseClient) {
+    showToast("Must be logged in to upload avatar.", "error");
+    return;
+  }
+  
+  const fileExt = file.name.split('.').pop();
+  const filePath = `${state.currentUser.id}-${Math.random()}.${fileExt}`;
+  
+  showToast("Uploading avatar...", "info");
+  
+  try {
+    const { error: uploadError } = await supabaseClient.storage.from('avatars').upload(filePath, file);
+    if (uploadError) throw uploadError;
+    
+    const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(filePath);
+    
+    await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq('id', state.currentUser.id);
+    await supabaseClient.auth.updateUser({
+      data: { avatar_url: publicUrl }
+    });
+    
+    state.currentUser.avatar_url = publicUrl;
+    updateAuthUI();
+    showToast("Avatar uploaded successfully!", "success");
+  } catch (err) {
+    console.error("Avatar upload error:", err);
+    showToast("Failed to upload avatar.", "error");
+  }
+}
+
+// --- HEADER DROPDOWN ---
+function confirmLogout(event) {
+  if (confirm("Are you sure you want to sign out?")) {
+    handleLogout(event);
+  } else if (event) {
+    event.preventDefault();
+  }
+}
+
+document.addEventListener("click", (event) => {
+  const dropdown = document.getElementById("user-dropdown");
+  const headerAvatarContainer = document.querySelector(".user-avatar-wrapper");
+  
+  if (dropdown && dropdown.classList.contains("open")) {
+    if (!dropdown.contains(event.target) && (!headerAvatarContainer || !headerAvatarContainer.contains(event.target))) {
+      closeUserDropdown();
+    }
+  }
+  
+  const notifDrawer = document.getElementById("notif-drawer");
+  const notifBell = document.getElementById("notif-bell");
+  
+  if (notifDrawer && notifDrawer.classList.contains("open")) {
+    if (!notifDrawer.contains(event.target) && (!notifBell || !notifBell.contains(event.target))) {
+      closeNotifDrawer();
+    }
+  }
+});

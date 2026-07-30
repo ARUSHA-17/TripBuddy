@@ -105,8 +105,11 @@
           </div>
         </div>
 
-        <!-- Auth Toggle Button for Logged out mode -->
-        <button class="btn btn-outline btn-sm" id="nav-signin" onclick="showAuthModal('login', event)">Sign In</button>
+        <!-- Auth Buttons for Logged out mode -->
+        <div id="nav-auth-buttons" class="flex-align gap-2" style="display: none;">
+          <button class="btn btn-outline btn-sm" id="nav-signin" onclick="showAuthModal('login', event)">Sign In</button>
+          <button class="btn btn-primary btn-sm" id="nav-register" onclick="showAuthModal('register', event)">Register</button>
+        </div>
       </div>
     </div>
   </header>
@@ -271,6 +274,28 @@
                 </div>
               </div>
             </div>
+
+            <!-- Public Comments & Discussion -->
+            <div class="card mb-4">
+              <div class="section-header-flex">
+                <h3><i class="fa-regular fa-comments text-accent"></i> Comments & Q&A</h3>
+                <span class="text-muted small" id="comment-count-label">Comments</span>
+              </div>
+              <div class="comments-list mt-3" id="trip-comments-container">
+                <!-- Dynamically Populated by script.js -->
+              </div>
+              
+              <!-- Comment Input Form -->
+              <form class="comment-input-form mt-3" id="trip-comment-form" onsubmit="handlePostComment(event)">
+                <div class="form-group mb-2">
+                  <input type="text" id="comment-text-input" class="form-control" placeholder="Ask a question or comment on this trip..." required>
+                </div>
+                <div class="flex-between">
+                  <span class="micro text-muted" id="comment-auth-notice"><i class="fa-solid fa-circle-info"></i> Guests can read comments; Sign In to post.</span>
+                  <button type="submit" class="btn btn-primary btn-sm" id="comment-submit-btn"><i class="fa-solid fa-paper-plane"></i> Post Comment</button>
+                </div>
+              </form>
+            </div>
           </div>
 
           <!-- Right Column: Cost Card & Direct Connect (No Payment Required) -->
@@ -315,6 +340,9 @@
               <!-- Action Button: Direct Connect to Group Chat without Payment -->
               <button class="btn btn-primary btn-block btn-lg" id="details-connect-btn" onclick="openChatModal(state.selectedTripId)">
                 Request to Connect & Chat <i class="fa-solid fa-comments"></i>
+              </button>
+              <button class="btn btn-outline btn-block mt-2" id="details-bookmark-btn" onclick="toggleBookmark(state.selectedTripId, event)">
+                <i class="fa-regular fa-bookmark"></i> Bookmark Trip
               </button>
               <p class="micro-note text-center mt-2"><i class="fa-solid fa-shield-halved text-success"></i> Free direct group chat portal with the Trip Host.</p>
 
@@ -1235,6 +1263,28 @@
 
   <!-- MODALS -->
 
+  <!-- 0. GUEST AUTH RESTRICTION MODAL -->
+  <div class="modal-backdrop" id="guest-auth-modal">
+    <div class="modal-card text-center" style="max-width: 440px;">
+      <button class="modal-close-btn" onclick="closeGuestModal()"><i class="fa-solid fa-xmark"></i></button>
+      <div class="auth-logo-header text-center mb-3">
+        <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo modal-logo">
+      </div>
+      <h2 class="mb-2">Sign In or Create an Account</h2>
+      <p class="text-muted mb-4" id="guest-modal-action-desc">You must be signed in to perform this action (e.g. creating trip posts, connecting with travelers, adding destinations, bookmarking, or commenting).</p>
+      
+      <div class="d-flex flex-column gap-2 mb-3">
+        <button class="btn btn-primary btn-block btn-lg mb-2" onclick="closeGuestModal(); showAuthModal('login', event)">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+        <button class="btn btn-outline btn-block btn-lg mb-2" onclick="closeGuestModal(); showAuthModal('register', event)">
+          <i class="fa-solid fa-user-plus"></i> Create an Account
+        </button>
+      </div>
+      <button type="button" class="btn-link text-muted small" onclick="closeGuestModal()">Continue Browsing in Read-Only Mode</button>
+    </div>
+  </div>
+
   <!-- 1. AUTH / LOGIN / REGISTER MODAL -->
   <div class="modal-backdrop" id="auth-modal">
     <div class="modal-card">
@@ -1251,11 +1301,11 @@
         <form onsubmit="handleLoginSubmit(event)">
           <div class="form-group">
             <label class="form-label">Email Address</label>
-            <input type="email" id="login-email-input" class="form-control" placeholder="name@example.com" value="alex.thorne@example.com" required>
+            <input type="email" id="login-email-input" class="form-control" placeholder="example@gmail.com" required>
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" id="login-password-input" class="form-control" value="password123" required>
+            <input type="password" id="login-password-input" class="form-control" placeholder="••••••••" required>
           </div>
           <div class="flex-between mb-3">
             <label class="custom-checkbox"><input type="checkbox" checked> Remember me</label>
@@ -1279,11 +1329,11 @@
           <div class="form-row">
             <div class="form-group col-6">
               <label class="form-label">Full Name</label>
-              <input type="text" id="reg-name-input" class="form-control" placeholder="Full Name" required>
+              <input type="text" id="reg-name-input" class="form-control" placeholder="Alex Thorne" required>
             </div>
             <div class="form-group col-6">
               <label class="form-label">Email Address</label>
-              <input type="email" id="reg-email-input" class="form-control" placeholder="name@example.com" required>
+              <input type="email" id="reg-email-input" class="form-control" placeholder="example@gmail.com" required>
             </div>
           </div>
           <div class="form-group">
@@ -1298,11 +1348,11 @@
           <div class="form-row">
             <div class="form-group col-6">
               <label class="form-label">Password</label>
-              <input type="password" id="reg-password-input" class="form-control" required>
+              <input type="password" id="reg-password-input" class="form-control" placeholder="••••••••" required>
             </div>
             <div class="form-group col-6">
               <label class="form-label">Confirm Password</label>
-              <input type="password" id="reg-confirm-password-input" class="form-control" required>
+              <input type="password" id="reg-confirm-password-input" class="form-control" placeholder="••••••••" required>
             </div>
           </div>
           <button type="submit" class="btn btn-primary btn-block btn-lg">Create Account</button>
@@ -1340,16 +1390,16 @@
           <form class="mt-3" onsubmit="processPayment(event)">
             <div class="form-group">
               <label class="form-label">Card Number</label>
-              <input type="text" class="form-control" placeholder="4532 •••• •••• 8892" value="4532 8920 1192 8892" required>
+              <input type="text" class="form-control" placeholder="4532 •••• •••• 8892" required>
             </div>
             <div class="form-row">
               <div class="form-group col-6">
                 <label class="form-label">Expiry Date</label>
-                <input type="text" class="form-control" placeholder="MM/YY" value="08/28" required>
+                <input type="text" class="form-control" placeholder="MM/YY" required>
               </div>
               <div class="form-group col-6">
                 <label class="form-label">CVV</label>
-                <input type="password" class="form-control" placeholder="123" value="882" required>
+                <input type="password" class="form-control" placeholder="••••" required>
               </div>
             </div>
             <div class="trust-flags flex-align gap-3 my-2">

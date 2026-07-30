@@ -205,11 +205,22 @@ let state = {
     { title: "Untitled Trip to Iceland", date: "Last edited 2 days ago" }
   ],
   currentUser: {
-    name: "Alex Thorne",
-    email: "alex.thorne@example.com",
-    role: "user", // "user" by default for normal travelers, "admin" for administrators
-    isLoggedIn: true,
-    status: "approved"
+    id: null,
+    name: "Guest",
+    email: "",
+    role: "user",
+    isLoggedIn: false,
+    status: "none"
+  },
+  bookmarks: [],
+  comments: {
+    "WB-101": [
+      { id: "c1", user: "Elena", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80", text: "Looking forward to this retreat! Are yoga mats provided?", time: "2 days ago" },
+      { id: "c2", user: "Mark J.", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80", text: "Can't wait for the water purification ritual at Tirta Empul.", time: "1 day ago" }
+    ],
+    "WB-104": [
+      { id: "c3", user: "Nipuni", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80", text: "What gear is required for Knuckles forest camping?", time: "3 hours ago" }
+    ]
   },
   pendingUsers: [
     { id: "USR-9901", name: "David Thompson", email: "david.t@example.com", dob: "05 May 1975", phone: "+44 7700 900123", role: "user", status: "pending_approval", registerDate: "2026-07-29" },
@@ -278,7 +289,20 @@ function initSupabaseAuthListener() {
       supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session && session.user) {
           handleSupabaseAuthUser(session.user);
+        } else {
+          state.currentUser = {
+            id: null,
+            name: "Guest",
+            email: "",
+            role: "user",
+            isLoggedIn: false,
+            status: "none"
+          };
+          updateAuthUI();
         }
+      }).catch(err => {
+        console.warn("Error getting session:", err);
+        updateAuthUI();
       });
 
       supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -286,6 +310,7 @@ function initSupabaseAuthListener() {
           handleSupabaseAuthUser(session.user);
         } else if (event === 'SIGNED_OUT') {
           state.currentUser = {
+            id: null,
             name: "Guest",
             email: "",
             role: "user",
@@ -297,8 +322,36 @@ function initSupabaseAuthListener() {
       });
     } catch (err) {
       console.warn("Supabase auth listener init error:", err);
+      updateAuthUI();
     }
+  } else {
+    updateAuthUI();
   }
+}
+
+// --- GUEST AUTHENTICATION GUARD & MODAL CONTROLS ---
+function requireAuth(actionName, callback) {
+  if (state.currentUser && state.currentUser.isLoggedIn) {
+    if (typeof callback === "function") callback();
+    return true;
+  } else {
+    showGuestModal(actionName);
+    return false;
+  }
+}
+
+function showGuestModal(actionName = "perform this action") {
+  const descEl = document.getElementById("guest-modal-action-desc");
+  if (descEl) {
+    descEl.innerText = `Please sign in or create an account to ${actionName}.`;
+  }
+  const modal = document.getElementById("guest-auth-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeGuestModal() {
+  const modal = document.getElementById("guest-auth-modal");
+  if (modal) modal.classList.remove("open");
 }
 
 async function handleSupabaseAuthUser(user) {
@@ -447,6 +500,7 @@ async function insertTripToSupabase(newTripObj) {
         .from('trips')
         .insert([{
           id: newTripObj.id,
+          user_id: newTripObj.user_id || state.currentUser?.id,
           title: newTripObj.title,
           category: newTripObj.category,
           cover: newTripObj.cover,
@@ -579,10 +633,27 @@ function updateAuthUI() {
   const footerAdmin = document.getElementById("footer-admin-link");
   const roleLabel = document.getElementById("current-role-label");
   const sidebarAdminName = document.getElementById("sidebar-admin-name");
-  const navSignin = document.getElementById("nav-signin");
+  
+  const navAuthButtons = document.getElementById("nav-auth-buttons");
+  const userAvatarWrapper = document.querySelector(".user-avatar-wrapper");
+  const notifBtn = document.getElementById("notif-btn");
+  const createGuestBanner = document.getElementById("create-trip-guest-banner");
 
   const isAdmin = checkIsAdmin();
   const isLoggedIn = !!(state.currentUser && state.currentUser.isLoggedIn);
+
+  if (navAuthButtons) {
+    navAuthButtons.style.display = isLoggedIn ? "none" : "flex";
+  }
+  if (userAvatarWrapper) {
+    userAvatarWrapper.style.display = isLoggedIn ? "flex" : "none";
+  }
+  if (notifBtn) {
+    notifBtn.style.display = isLoggedIn ? "flex" : "none";
+  }
+  if (createGuestBanner) {
+    createGuestBanner.style.display = isLoggedIn ? "none" : "flex";
+  }
 
   if (adminNav) {
     adminNav.style.display = isAdmin ? "inline-flex" : "none";
@@ -602,7 +673,7 @@ function updateAuthUI() {
   }
 
   if (sidebarAdminName && state.currentUser) {
-    sidebarAdminName.innerText = state.currentUser.name;
+    sidebarAdminName.innerText = state.currentUser.name || "Guest";
   }
 
   const userNameEl = document.getElementById("dropdown-user-name");
@@ -615,16 +686,6 @@ function updateAuthUI() {
       userRoleEl.innerHTML = `<span class="badge-tag verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span>`;
     } else {
       userRoleEl.innerHTML = `<span class="badge-tag warning-tag"><i class="fa-solid fa-user"></i> Not Signed In</span>`;
-    }
-  }
-
-  if (navSignin) {
-    if (isLoggedIn) {
-      navSignin.innerText = "Log Out";
-      navSignin.onclick = (e) => handleLogout(e);
-    } else {
-      navSignin.innerText = "Sign In";
-      navSignin.onclick = (e) => showAuthModal("login", e);
     }
   }
 }
@@ -729,15 +790,20 @@ async function renderTripGrid() {
     return;
   }
 
-  container.innerHTML = filtered.map(trip => `
+  container.innerHTML = filtered.map(trip => {
+    const isBookmarked = state.bookmarks && state.bookmarks.includes(trip.id);
+    return `
     <div class="trip-card ${trip.isFeatured ? 'featured-card-border' : ''}">
-      <div class="trip-card-image">
+      <div class="trip-card-image" style="position: relative;">
         <img src="${trip.cover}" alt="${trip.title}">
         ${trip.isFeatured ? `
           <span class="badge-tag featured-tag badge-top-left"><i class="fa-solid fa-star"></i> FEATURED</span>
         ` : `
           <span class="badge-tag ${trip.badgeClass} badge-top-left"><i class="fa-solid fa-shield-check"></i> ${trip.badge}</span>
         `}
+        <button class="bookmark-card-btn ${isBookmarked ? 'active' : ''}" onclick="toggleBookmark('${trip.id}', event)" title="Bookmark Trip" style="position: absolute; bottom: 12px; right: 12px; background: rgba(255,255,255,0.92); border: none; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: ${isBookmarked ? '#f59e0b' : '#64748b'}; font-size: 1.1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: transform 0.2s ease;">
+          <i class="${isBookmarked ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i>
+        </button>
         <span class="price-top-right">${trip.price}</span>
       </div>
       <div class="trip-card-body">
@@ -757,7 +823,8 @@ async function renderTripGrid() {
         </div>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function formatDateShort(dateStr) {
@@ -782,6 +849,93 @@ function filterTrips() {
   const input = document.getElementById("trip-search-input");
   state.searchQuery = input ? input.value : "";
   renderTripGrid();
+}
+
+// --- BOOKMARKING & COMMENTS SYSTEM ---
+function toggleBookmark(tripId, event) {
+  const evt = event || (typeof window !== "undefined" ? window.event : null);
+  if (evt && typeof evt.stopPropagation === "function") evt.stopPropagation();
+
+  if (!requireAuth("bookmark trips")) return;
+
+  if (!state.bookmarks) state.bookmarks = [];
+  const idx = state.bookmarks.indexOf(tripId);
+  if (idx > -1) {
+    state.bookmarks.splice(idx, 1);
+    showToast("Trip removed from bookmarks", "info");
+  } else {
+    state.bookmarks.push(tripId);
+    showToast("Trip saved to your bookmarks!", "success");
+  }
+  renderTripGrid();
+  updateDetailsBookmarkButton();
+}
+
+function updateDetailsBookmarkButton() {
+  const btn = document.getElementById("details-bookmark-btn");
+  if (!btn) return;
+  const isBookmarked = state.bookmarks && state.bookmarks.includes(state.selectedTripId);
+  if (isBookmarked) {
+    btn.innerHTML = `<i class="fa-solid fa-bookmark text-accent"></i> Bookmarked`;
+    btn.classList.add("active");
+  } else {
+    btn.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark Trip`;
+    btn.classList.remove("active");
+  }
+}
+
+function renderTripComments(tripId) {
+  const container = document.getElementById("trip-comments-container");
+  const countLabel = document.getElementById("comment-count-label");
+  if (!container) return;
+
+  const comments = (state.comments && state.comments[tripId]) || [];
+  if (countLabel) countLabel.innerText = `${comments.length} Comments`;
+
+  if (comments.length === 0) {
+    container.innerHTML = `<p class="text-muted small py-2">No comments yet. Be the first to start the discussion!</p>`;
+    return;
+  }
+
+  container.innerHTML = comments.map(c => `
+    <div class="comment-item flex-align gap-3 py-2 border-bottom">
+      <img src="${c.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80'}" class="user-avatar-sm" alt="${c.user}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
+      <div class="comment-body">
+        <div class="flex-align gap-2">
+          <strong>${c.user}</strong>
+          <span class="micro text-muted">${c.time}</span>
+        </div>
+        <p class="small text-body mb-0">${c.text}</p>
+      </div>
+    </div>
+  `).join("");
+}
+
+function handlePostComment(e) {
+  e.preventDefault();
+  if (!requireAuth("post comments on trip posts")) return;
+
+  const input = document.getElementById("comment-text-input");
+  const text = input ? input.value.trim() : "";
+  if (!text) return;
+
+  const tripId = state.selectedTripId || "WB-101";
+  if (!state.comments) state.comments = {};
+  if (!state.comments[tripId]) state.comments[tripId] = [];
+
+  const newComment = {
+    id: `c_${Date.now()}`,
+    user: state.currentUser.name || "Traveler",
+    user_id: state.currentUser.id,
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+    text: text,
+    time: "Just now"
+  };
+
+  state.comments[tripId].push(newComment);
+  renderTripComments(tripId);
+  input.value = "";
+  showToast("Comment posted successfully!", "success");
 }
 
 // --- TRIP DETAILS VIEW POPULATOR ---
@@ -809,6 +963,9 @@ function openTripDetails(tripId) {
   if (connectBtn) {
     connectBtn.onclick = () => openChatModal(trip.id);
   }
+
+  renderTripComments(trip.id);
+  updateDetailsBookmarkButton();
 
   navigateTo("details");
 }
@@ -883,6 +1040,7 @@ function renderDestinationsRouteList() {
 }
 
 function addDestinationTag() {
+  if (!requireAuth("add destination stops")) return;
   const input = document.getElementById("destinations-input");
   if (!input) return;
   const val = input.value.trim();
@@ -901,6 +1059,7 @@ function removeDestination(index) {
 }
 
 function saveTripAsDraft() {
+  if (!requireAuth("save trip drafts")) return;
   const title = document.getElementById("trip-title-input").value || "Untitled Draft Trip";
   state.drafts.unshift({ title: title, date: "Just saved" });
 
@@ -921,6 +1080,7 @@ function saveTripAsDraft() {
 
 function handlePostTrip(e) {
   e.preventDefault();
+  if (!requireAuth("create trip posts")) return;
   openPaymentModal();
 }
 
@@ -951,6 +1111,7 @@ async function processPayment(e) {
 
       const newTripObj = {
         id: `WB-${Math.floor(100 + Math.random() * 900)}`,
+        user_id: state.currentUser ? state.currentUser.id : null,
         title: newTitle,
         category: document.getElementById("category-select").value || "Adventure",
         cover: document.getElementById("image-preview").src || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
@@ -991,6 +1152,7 @@ async function processPayment(e) {
 
 // --- TRIP GROUP CHAT & PRIVACY SYSTEM ---
 function openChatModal(tripId) {
+  if (!requireAuth("connect with trip hosts & travelers")) return;
   const targetId = tripId || state.selectedTripId || "WB-101";
   state.selectedTripId = targetId;
 
@@ -1970,11 +2132,21 @@ function showAuthModal(tab = "login", event) {
     evt.preventDefault();
   }
   switchAuthTab(tab);
+
+  const loginEmail = document.getElementById("login-email-input");
+  const loginPass = document.getElementById("login-password-input");
+  if (loginEmail) loginEmail.value = "";
+  if (loginPass) loginPass.value = "";
+
   document.getElementById("auth-modal").classList.add("open");
 }
 
 function closeAuthModal() {
   document.getElementById("auth-modal").classList.remove("open");
+  const loginEmail = document.getElementById("login-email-input");
+  const loginPass = document.getElementById("login-password-input");
+  if (loginEmail) loginEmail.value = "";
+  if (loginPass) loginPass.value = "";
 }
 
 function switchAuthTab(tab) {

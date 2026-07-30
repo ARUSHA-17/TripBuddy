@@ -259,6 +259,7 @@ let state = {
 // --- INITIALIZATION ---
 document.addEventListener("DOMContentLoaded", async () => {
   setupDateInputs();
+  initSupabaseAuthListener();
   updateAuthUI();
   setupNavigationEventListeners();
   renderDestinationsRouteList();
@@ -270,6 +271,76 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderAdminList();
   initAdminCharts();
 });
+
+function initSupabaseAuthListener() {
+  if (supabaseClient) {
+    try {
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session && session.user) {
+          handleSupabaseAuthUser(session.user);
+        }
+      });
+
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          handleSupabaseAuthUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          state.currentUser = {
+            name: "Guest",
+            email: "",
+            role: "user",
+            isLoggedIn: false,
+            status: "none"
+          };
+          updateAuthUI();
+        }
+      });
+    } catch (err) {
+      console.warn("Supabase auth listener init error:", err);
+    }
+  }
+}
+
+async function handleSupabaseAuthUser(user) {
+  if (!user) return;
+  const metadata = user.user_metadata || {};
+  let status = metadata.status || "approved";
+  let role = metadata.role || "user";
+  let name = metadata.full_name || metadata.name || user.email.split("@")[0];
+
+  if (supabaseClient) {
+    try {
+      const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+      if (profile) {
+        if (profile.status) status = profile.status;
+        if (profile.role) role = profile.role;
+        if (profile.full_name) name = profile.full_name;
+      }
+    } catch (err) {
+      console.warn("Error checking profile:", err);
+    }
+  }
+
+  if (status === "pending_approval") {
+    if (supabaseClient) {
+      try { await supabaseClient.auth.signOut(); } catch (err) {}
+    }
+    state.currentUser = { name: "Guest", email: "", role: "user", isLoggedIn: false, status: "pending_approval" };
+    updateAuthUI();
+    showToast("Your account is pending Admin approval.", "warning");
+    return;
+  }
+
+  state.currentUser = {
+    id: user.id,
+    name: name,
+    email: user.email,
+    role: role,
+    status: status,
+    isLoggedIn: true
+  };
+  updateAuthUI();
+}
 
 function setupNavigationEventListeners() {
   const navDiscover = document.getElementById("nav-discover");
@@ -508,8 +579,10 @@ function updateAuthUI() {
   const footerAdmin = document.getElementById("footer-admin-link");
   const roleLabel = document.getElementById("current-role-label");
   const sidebarAdminName = document.getElementById("sidebar-admin-name");
+  const navSignin = document.getElementById("nav-signin");
 
   const isAdmin = checkIsAdmin();
+  const isLoggedIn = !!(state.currentUser && state.currentUser.isLoggedIn);
 
   if (adminNav) {
     adminNav.style.display = isAdmin ? "inline-flex" : "none";
@@ -534,12 +607,24 @@ function updateAuthUI() {
 
   const userNameEl = document.getElementById("dropdown-user-name");
   const userRoleEl = document.getElementById("dropdown-user-role");
-  if (userNameEl) userNameEl.innerText = state.currentUser ? state.currentUser.name : "Guest";
+  if (userNameEl) userNameEl.innerText = isLoggedIn ? state.currentUser.name : "Guest";
   if (userRoleEl) {
     if (isAdmin) {
       userRoleEl.innerHTML = `<span class="badge-tag confirmed-tag"><i class="fa-solid fa-user-shield"></i> Primary Administrator</span>`;
-    } else {
+    } else if (isLoggedIn) {
       userRoleEl.innerHTML = `<span class="badge-tag verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span>`;
+    } else {
+      userRoleEl.innerHTML = `<span class="badge-tag warning-tag"><i class="fa-solid fa-user"></i> Not Signed In</span>`;
+    }
+  }
+
+  if (navSignin) {
+    if (isLoggedIn) {
+      navSignin.innerText = "Log Out";
+      navSignin.onclick = (e) => handleLogout(e);
+    } else {
+      navSignin.innerText = "Sign In";
+      navSignin.onclick = (e) => showAuthModal("login", e);
     }
   }
 }
@@ -1902,40 +1987,134 @@ function switchAuthTab(tab) {
   }
 }
 
-function handleLoginSubmit(e) {
+async function handleLoginSubmit(e) {
   e.preventDefault();
-  closeAuthModal();
 
-  const roleSelect = document.getElementById("login-role-select");
   const emailInput = document.getElementById("login-email-input");
+  const passwordInput = document.getElementById("login-password-input");
 
-  const selectedRole = roleSelect ? roleSelect.value : "user";
-  const email = emailInput ? emailInput.value : "";
+  const email = emailInput ? emailInput.value.trim() : "";
+  const password = passwordInput ? passwordInput.value : "";
 
-  if (selectedRole === "admin" || email.includes("admin")) {
-    state.currentUser = {
-      name: "Primary System Admin",
-      email: email || "admin@tripbuddy.com",
-      role: "admin",
-      isLoggedIn: true
-    };
+  if (!email || !password) {
+    showToast("Please enter email and password.", "warning");
+    return;
+  }
+
+  let authUser = null;
+  let authError = null;
+
+  // 1. SIGN-IN LOGIC: Use supabase.auth.signInWithPassword({ email, password })
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+      authUser = data?.user;
+      authError = error;
+    } catch (err) {
+      console.error("Supabase signInWithPassword exception:", err);
+      authError = err;
+    }
+  }
+
+  if (authError && authError.message) {
+    console.warn("Supabase auth error message:", authError.message);
+  }
+
+  let userStatus = null;
+  let userRole = null;
+  let userName = null;
+  let userId = null;
+
+  if (authUser) {
+    userId = authUser.id;
+    const metadata = authUser.user_metadata || {};
+    userStatus = metadata.status;
+    userRole = metadata.role;
+    userName = metadata.full_name || metadata.name || email.split("@")[0];
+
+    // Check custom profiles table for user status & role
+    if (supabaseClient) {
+      try {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
+        if (profile) {
+          if (profile.status) userStatus = profile.status;
+          if (profile.role) userRole = profile.role;
+          if (profile.full_name) userName = profile.full_name;
+        }
+      } catch (err) {
+        console.warn("Profiles query error:", err);
+      }
+    }
+  }
+
+  // Fallback to local state / demo accounts
+  if (!userStatus || !userRole) {
+    const localUser = state.allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (localUser) {
+      userId = userId || localUser.id;
+      userStatus = userStatus || localUser.status;
+      userRole = userRole || localUser.role;
+      userName = userName || localUser.name;
+    } else if (email.toLowerCase().includes("admin")) {
+      userRole = userRole || "admin";
+      userStatus = userStatus || "approved";
+      userName = userName || "Primary System Admin";
+    } else {
+      userRole = userRole || "user";
+      userStatus = userStatus || "approved";
+      userName = userName || email.split("@")[0];
+    }
+  }
+
+  // Check user status
+  // If status === 'pending_approval', prevent full login and display: "Your account is pending Admin approval."
+  if (userStatus === "pending_approval") {
+    if (supabaseClient) {
+      try { await supabaseClient.auth.signOut(); } catch (err) {}
+    }
+    showToast("Your account is pending Admin approval.", "warning");
+    return;
+  }
+
+  if (userStatus === "suspended" || userStatus === "rejected") {
+    if (supabaseClient) {
+      try { await supabaseClient.auth.signOut(); } catch (err) {}
+    }
+    showToast(`Account cannot sign in (Status: ${userStatus.toUpperCase()}). Please contact Admin.`, "error");
+    return;
+  }
+
+  // If status === 'approved', log them in smoothly.
+  state.currentUser = {
+    id: userId || `USR-${Date.now()}`,
+    name: userName,
+    email: email,
+    role: userRole,
+    status: userStatus,
+    isLoggedIn: true
+  };
+
+  closeAuthModal();
+  updateAuthUI();
+
+  // If role === 'admin', show the Admin Dashboard section
+  if (userRole === "admin") {
     showToast("Authenticated as Administrator! Super Admin Portal unlocked.", "success");
-    updateAuthUI();
     navigateTo("admin");
   } else {
-    state.currentUser = {
-      name: "Alex Thorne",
-      email: email || "alex.thorne@example.com",
-      role: "user",
-      isLoggedIn: true
-    };
-    showToast("Logged in successfully as Regular Traveler (Alex Thorne).", "info");
-    updateAuthUI();
+    showToast(`Welcome back, ${userName}! Logged in successfully.`, "success");
     navigateTo("discover");
   }
 }
 
-function handleRegisterSubmit(e) {
+async function handleRegisterSubmit(e) {
   e.preventDefault();
 
   if (state.siteSettings && state.siteSettings.allowRegistrations === false) {
@@ -1944,15 +2123,73 @@ function handleRegisterSubmit(e) {
     return;
   }
 
-  closeAuthModal();
-
   const nameInput = document.getElementById("reg-name-input");
   const emailInput = document.getElementById("reg-email-input");
+  const passwordInput = document.getElementById("reg-password-input");
+  const confirmPasswordInput = document.getElementById("reg-confirm-password-input");
 
-  const name = nameInput ? nameInput.value : "New User";
-  const email = emailInput ? emailInput.value : "user@example.com";
+  const name = nameInput ? nameInput.value.trim() : "New User";
+  const email = emailInput ? emailInput.value.trim() : "";
+  const password = passwordInput ? passwordInput.value : "";
+  const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : "";
 
-  const newUserId = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
+  if (!email || !password) {
+    showToast("Please enter an email address and password.", "warning");
+    return;
+  }
+
+  if (passwordInput && confirmPasswordInput && password !== confirmPassword) {
+    showToast("Passwords do not match.", "error");
+    return;
+  }
+
+  let signUpUser = null;
+  let signUpError = null;
+
+  // 1. SIGN-UP LOGIC: Use supabase.auth.signUp({ email, password, options: { data: { role: 'user', status: 'pending_approval' } } })
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: name,
+            name: name,
+            role: 'user',
+            status: 'pending_approval'
+          }
+        }
+      });
+      signUpUser = data?.user;
+      signUpError = error;
+    } catch (err) {
+      console.error("Supabase auth.signUp exception:", err);
+      signUpError = err;
+    }
+  }
+
+  if (signUpError && signUpError.message) {
+    console.warn("Supabase auth.signUp error:", signUpError.message);
+  }
+
+  const newUserId = signUpUser?.id || `USR-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  // Store user details in a custom profiles table in the public schema
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('profiles').upsert([{
+        id: newUserId,
+        full_name: name,
+        email: email,
+        role: 'user',
+        status: 'pending_approval'
+      }]);
+    } catch (err) {
+      console.warn("Supabase profile insert fallback:", err);
+    }
+  }
+
   const newUser = {
     id: newUserId,
     name: name,
@@ -1964,21 +2201,41 @@ function handleRegisterSubmit(e) {
     registerDate: formatDateISO(new Date())
   };
 
-  state.pendingUsers.push(newUser);
-  state.allUsers.push(newUser);
-
-  if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
-    try {
-      supabaseClient.from('profiles').insert([{
-        id: newUserId,
-        full_name: name,
-        email: email,
-        role: 'user',
-        status: 'pending_approval'
-      }]);
-    } catch (err) { console.warn("Supabase register insert fallback:", err); }
+  if (!state.pendingUsers.some(u => u.email === email)) {
+    state.pendingUsers.push(newUser);
+  }
+  if (!state.allUsers.some(u => u.email === email)) {
+    state.allUsers.push(newUser);
   }
 
+  closeAuthModal();
   renderAdminTables();
-  showToast("Registration Submitted! Your account is set to 'pending_approval' for Admin Review.", "success");
+  showToast("Your account is pending Admin approval.", "warning");
+}
+
+async function handleLogout(e) {
+  const evt = e || (typeof window !== "undefined" ? window.event : null);
+  if (evt && typeof evt.preventDefault === "function") {
+    evt.preventDefault();
+  }
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (err) {
+      console.warn("Supabase signOut error:", err);
+    }
+  }
+
+  state.currentUser = {
+    name: "Guest",
+    email: "",
+    role: "user",
+    isLoggedIn: false,
+    status: "none"
+  };
+
+  showToast("Logged out successfully.", "info");
+  updateAuthUI();
+  navigateTo("discover");
 }

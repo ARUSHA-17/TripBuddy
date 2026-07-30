@@ -101,7 +101,7 @@
             <!-- STRICT SECURITY RULE: Role switching hidden for regular users, admin-only -->
             <a href="#" class="dropdown-item admin-only" id="dropdown-switch-role-item" onclick="toggleDemoRole(event)" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Switch Role (<strong id="current-role-label">User</strong>)</a>
             <hr>
-            <a href="#" class="dropdown-item danger" onclick="showAuthModal('login', event)"><i class="fa-solid fa-right-from-bracket"></i> Switch Account / Logout</a>
+            <a href="#" class="dropdown-item danger" onclick="handleLogout(event)"><i class="fa-solid fa-right-from-bracket"></i> Switch Account / Logout</a>
           </div>
         </div>
 
@@ -1255,14 +1255,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-control" value="password123" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Login Account Role</label>
-            <select class="form-control" id="login-role-select">
-              <option value="user">Regular Traveler (User View)</option>
-              <option value="admin">Primary Administrator (Admin Portal)</option>
-            </select>
+            <input type="password" id="login-password-input" class="form-control" value="password123" required>
           </div>
           <div class="flex-between mb-3">
             <label class="custom-checkbox"><input type="checkbox" checked> Remember me</label>
@@ -1295,8 +1288,8 @@
           </div>
           <div class="form-group">
             <label class="form-label">Account Role</label>
-            <select class="form-control" required>
-              <option value="Traveler">Traveler (Host / Companion)</option>
+            <select class="form-control" id="reg-role-select" required>
+              <option value="user">Traveler (Host / Companion)</option>
               <option value="Hotel">Service Provider - Hotel / Stay</option>
               <option value="Tourist Guide">Service Provider - Tourist Guide</option>
               <option value="Vehicle Render">Service Provider - Vehicle Render</option>
@@ -1305,11 +1298,11 @@
           <div class="form-row">
             <div class="form-group col-6">
               <label class="form-label">Password</label>
-              <input type="password" class="form-control" required>
+              <input type="password" id="reg-password-input" class="form-control" required>
             </div>
             <div class="form-group col-6">
               <label class="form-label">Confirm Password</label>
-              <input type="password" class="form-control" required>
+              <input type="password" id="reg-confirm-password-input" class="form-control" required>
             </div>
           </div>
           <button type="submit" class="btn btn-primary btn-block btn-lg">Create Account</button>

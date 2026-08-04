@@ -1278,3 +1278,32 @@ h1, h2, h3, h4, h5, h6 {
 .upload-status.error {
   color: #ef4444;
 }
+
+/* Navbar Brand Logo Styles */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  gap: 0.5rem;
+}
+
+.brand-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.brand-fallback {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--bg-dark);
+}
+.brand-fallback i {
+  color: var(--color-cyan-dark);
+  font-size: 1.5rem;
+}

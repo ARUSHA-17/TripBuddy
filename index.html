@@ -34,9 +34,13 @@
   <!-- GLOBAL HEADER NAVBAR -->
   <header class="global-navbar">
     <div class="nav-container">
-      <div class="nav-brand" onclick="navigateTo('discover', event)">
-        <img src="assets/images/logo.png" alt="Brand Logo" class="brand-logo">
-      </div>
+      <a href="#" class="nav-brand" onclick="navigateTo('discover', event)">
+        <img src="assets/images/logo.png" alt="TripBuddy Logo" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="brand-fallback" style="display: none;">
+          <i class="fa-solid fa-mountain-sun"></i>
+          <span>TripBuddy</span>
+        </div>
+      </a>
 
       <nav class="nav-menu">
         <a href="#" class="nav-link active" id="nav-discover" onclick="navigateTo('discover', event)">Discover</a>

@@ -336,20 +336,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .footer-logo {
-  height: 52px;
+  height: 40px;
+  width: auto;
   max-width: 240px;
-  filter: brightness(0) invert(1);
+  object-fit: contain;
 }
 
 .admin-logo {
   height: 42px;
+  width: auto;
   max-width: 180px;
-  filter: brightness(0) invert(1);
+  object-fit: contain;
 }
 
 .modal-logo {
   height: 48px;
+  width: auto;
   max-width: 200px;
+  object-fit: contain;
 }
 
 .nav-menu {

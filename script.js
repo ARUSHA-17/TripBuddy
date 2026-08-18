@@ -206,13 +206,7 @@ let state = {
   drafts: [
     { title: "Untitled Trip to Iceland", date: "Last edited 2 days ago" }
   ],
-  currentUser: {
-    name: "Alex Thorne",
-    email: "alex.thorne@example.com",
-    role: "user", // "user" by default for normal travelers, "admin" for administrators
-    isLoggedIn: true,
-    status: "approved"
-  },
+  currentUser: null,
   pendingUsers: [
     { id: "USR-9901", name: "David Thompson", email: "david.t@example.com", dob: "05 May 1975", phone: "+44 7700 900123", role: "Traveler", status: "pending_approval", registerDate: "2026-07-29" },
     { id: "USR-9902", name: "Jessica Lee", email: "jessica.l@example.com", dob: "18 Aug 1992", phone: "+1 202 555 0128", role: "Traveler", status: "pending_approval", registerDate: "2026-07-30" }
@@ -486,15 +480,38 @@ function formatDateISO(d) {
 
 // --- ROLE-BASED AUTH & VISIBILITY CONTROL ---
 function updateAuthUI() {
-  const isAuth = state.currentUser && state.currentUser.isLoggedIn;
+  const storedUser = localStorage.getItem("user");
+  const storedToken = localStorage.getItem("token");
+
+  if (storedToken && storedUser) {
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      state.currentUser = {
+        name: parsedUser.name || "Traveler",
+        email: parsedUser.email || "",
+        role: parsedUser.role || "user",
+        isLoggedIn: true,
+        status: parsedUser.status || "approved",
+        avatar: parsedUser.avatar || null
+      };
+    } catch (e) {
+      console.warn("Failed to parse stored user from localStorage:", e);
+    }
+  } else if (!state.currentUser || !state.currentUser.isLoggedIn) {
+    state.currentUser = null;
+  }
+
+  const isAuth = Boolean(state.currentUser && state.currentUser.isLoggedIn);
   const isAdmin = isAuth && state.currentUser.role === "admin";
 
   const navAuthBtns = document.getElementById("nav-auth-buttons");
   const userAvatar = document.querySelector(".user-avatar-wrapper");
+  const notifBell = document.getElementById("notif-bell");
   const adminElements = document.querySelectorAll(".admin-only");
 
   if (navAuthBtns) navAuthBtns.style.display = isAuth ? "none" : "flex";
   if (userAvatar) userAvatar.style.display = isAuth ? "flex" : "none";
+  if (notifBell) notifBell.style.display = isAuth ? "flex" : "none";
 
   adminElements.forEach(el => {
     el.style.display = isAdmin ? "flex" : "none";

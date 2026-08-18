@@ -245,21 +245,51 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// --- TRIP ROUTES ---
+// --- AUTHENTICATION MIDDLEWARE ---
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') 
+    ? authHeader.split(' ')[1] 
+    : req.headers['x-auth-token'] || req.query.token;
 
-// Create Trip
-app.post('/api/trips', async (req, res) => {
+  if (!token) {
+    return res.status(401).json({ error: 'Access Denied: Authentication token required to create posts. Please log in.' });
+  }
+
   try {
-    const { userId, destination, startDate, endDate, notes } = req.body;
-    
-    const newTrip = new Trip({ userId, destination, startDate, endDate, notes });
+    const verifiedUser = jwt.verify(token, JWT_SECRET);
+    req.user = verifiedUser;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid or expired authentication token. Please log in again.' });
+  }
+};
+
+// --- TRIP / POST ROUTES ---
+
+// Create Post / Trip (Protected Route)
+const handleCreatePost = async (req, res) => {
+  try {
+    const { userId, destination, title, startDate, endDate, notes } = req.body;
+    const authorId = req.user ? req.user.id : userId;
+
+    const newTrip = new Trip({ 
+      userId: authorId || userId, 
+      destination: destination || title, 
+      startDate, 
+      endDate, 
+      notes 
+    });
     await newTrip.save();
 
-    res.status(201).json({ message: 'Trip created successfully!', trip: newTrip });
+    res.status(201).json({ message: 'Post created successfully!', post: newTrip, trip: newTrip });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
+};
+
+app.post('/api/posts', authenticateToken, handleCreatePost);
+app.post('/api/trips', authenticateToken, handleCreatePost);
 
 // Get Trips for a User
 app.get('/api/trips/:userId', async (req, res) => {

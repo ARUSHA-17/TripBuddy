@@ -570,6 +570,13 @@ async function navigateTo(viewId, event) {
   if (activeNav) activeNav.classList.add("active");
 
   if (viewId === "create") {
+    const isAuth = Boolean(state.currentUser && state.currentUser.isLoggedIn && (localStorage.getItem("token") || state.currentUser.token));
+    if (!isAuth) {
+      showToast("Access Restricted: Please sign in or create an account to post content.", "warning");
+      openGuestModal("create new trip posts or host travel experiences");
+      showAuthModal("login");
+      return;
+    }
     setupDateInputs();
   } else if (viewId === "profile") {
     renderUserProfile();
@@ -816,6 +823,13 @@ function saveTripAsDraft() {
 
 function handlePostTrip(e) {
   if (e) e.preventDefault();
+  const isAuth = Boolean(state.currentUser && state.currentUser.isLoggedIn && (localStorage.getItem("token") || state.currentUser.token));
+  if (!isAuth) {
+    showToast("Access Restricted: Please sign in to publish trip posts.", "warning");
+    openGuestModal("create new trip posts or host travel experiences");
+    showAuthModal("login");
+    return;
+  }
   openPaymentModal();
 }
 

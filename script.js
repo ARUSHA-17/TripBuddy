@@ -244,6 +244,7 @@ let state = {
 // --- INITIALIZATION ---
 document.addEventListener("DOMContentLoaded", async () => {
   setupDateInputs();
+  renderUserProfile();
   updateAuthUI();
   setupNavigationEventListeners();
   renderDestinationsRouteList();
@@ -252,6 +253,31 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderServicesGrid();
   renderAdminTables();
   renderAdminList();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const resetToken = urlParams.get("resetToken");
+  if (resetToken) {
+    openResetPasswordModal(resetToken);
+  }
+});
+
+// Outside-Click Listener to close User Dropdown and Notifications Drawer when clicking outside
+document.addEventListener("click", (e) => {
+  const userDropdown = document.getElementById("user-dropdown");
+  const avatarWrapper = document.querySelector(".user-avatar-wrapper");
+  if (userDropdown && userDropdown.classList.contains("open")) {
+    if (!userDropdown.contains(e.target) && (!avatarWrapper || !avatarWrapper.contains(e.target))) {
+      closeUserDropdown();
+    }
+  }
+
+  const notifDrawer = document.getElementById("notif-drawer");
+  const notifBell = document.getElementById("notif-bell");
+  if (notifDrawer && notifDrawer.classList.contains("open")) {
+    if (!notifDrawer.contains(e.target) && (!notifBell || !notifBell.contains(e.target))) {
+      closeNotifDrawer();
+    }
+  }
 });
 
 function setupNavigationEventListeners() {
@@ -312,9 +338,8 @@ function setupNavigationEventListeners() {
 
 // --- SUPABASE DATABASE QUERY FUNCTIONS ---
 
-// 1. Fetch only approved trips from Supabase for public discover rendering
 async function fetchApprovedTripsFromSupabase() {
-  if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
+  if (supabaseClient && SUPABASE_URL !== 'https://afwixacnnmvrvfsnvdxu.supabase.co') {
     try {
       const { data, error } = await supabaseClient
         .from('trips')
@@ -328,214 +353,175 @@ async function fetchApprovedTripsFromSupabase() {
           category: t.category,
           cover: t.cover,
           price: t.price,
-          priceRaw: t.price_raw || t.priceRaw,
+          priceRaw: t.price_raw || 50000,
           badge: t.badge || "VERIFIED HOST",
-          badgeClass: t.badge_class || t.badgeClass || "verified-tag",
-          days: t.days,
-          startDate: t.start_date || t.startDate,
-          endDate: t.end_date || t.endDate,
-          languages: t.languages,
-          host: t.host,
-          hostAvatar: t.host_avatar || t.hostAvatar,
-          hostBio: t.host_bio || t.hostBio,
+          badgeClass: t.badge_class || "verified-tag",
+          days: t.days || 5,
+          startDate: t.start_date,
+          endDate: t.end_date,
+          languages: t.languages || "English, Sinhala",
+          host: t.host || "Alex Thorne",
+          hostAvatar: t.host_avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+          hostBio: t.host_bio || "Verified Host",
           location: t.location,
           quotas: t.quotas,
           vehicle: t.vehicle,
           description: t.description,
-          status: t.status || "approved"
+          status: t.status
         }));
       }
     } catch (err) {
-      console.warn("Supabase approved trips query fallback:", err);
+      console.warn("Supabase fetch warning, using local mock data:", err);
     }
   }
 }
 
-// 2. Insert new trip post into Supabase with status 'pending_approval'
-async function insertTripToSupabase(newTripObj) {
-  if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
-    try {
-      const { data, error } = await supabaseClient
-        .from('trips')
-        .insert([{
-          id: newTripObj.id,
-          title: newTripObj.title,
-          category: newTripObj.category,
-          cover: newTripObj.cover,
-          price: newTripObj.price,
-          price_raw: newTripObj.priceRaw,
-          badge: newTripObj.badge,
-          badge_class: newTripObj.badgeClass,
-          days: newTripObj.days,
-          start_date: newTripObj.startDate,
-          end_date: newTripObj.endDate,
-          languages: newTripObj.languages,
-          host: newTripObj.host,
-          host_avatar: newTripObj.hostAvatar,
-          host_bio: newTripObj.hostBio,
-          location: newTripObj.location,
-          quotas: newTripObj.quotas,
-          vehicle: newTripObj.vehicle,
-          description: newTripObj.description,
-          status: 'pending_approval'
-        }]);
-      if (error) console.error("Supabase insert error:", error);
-    } catch (err) {
-      console.warn("Supabase insert trip fallback:", err);
-    }
-  }
-}
-
-// 3. Fetch pending trips from Supabase for Admin Moderation
 async function fetchPendingTripsFromSupabase() {
-  if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
+  if (supabaseClient && SUPABASE_URL !== 'https://afwixacnnmvrvfsnvdxu.supabase.co') {
     try {
       const { data, error } = await supabaseClient
         .from('trips')
-        .select('*')
-        .eq('status', 'pending_approval');
+        .select('*');
 
-      if (!error && data) {
-        const mapped = data.map(t => ({
-          id: t.id,
-          title: t.title,
-          category: t.category,
-          cover: t.cover,
-          price: t.price,
-          priceRaw: t.price_raw || t.priceRaw,
-          badge: t.badge || "PENDING VERIFICATION",
-          badgeClass: t.badge_class || t.badgeClass || "warning-tag",
-          days: t.days,
-          startDate: t.start_date || t.startDate,
-          endDate: t.end_date || t.endDate,
-          languages: t.languages,
-          host: t.host,
-          hostAvatar: t.host_avatar || t.hostAvatar,
-          hostBio: t.host_bio || t.hostBio,
-          location: t.location,
-          quotas: t.quotas,
-          vehicle: t.vehicle,
-          description: t.description,
-          status: 'pending_approval'
-        }));
-
-        mapped.forEach(p => {
-          if (!state.trips.some(t => t.id === p.id)) {
-            state.trips.unshift(p);
+      if (!error && data && data.length > 0) {
+        const existingIds = new Set(state.trips.map(t => t.id));
+        data.forEach(t => {
+          if (!existingIds.has(t.id)) {
+            state.trips.push({
+              id: t.id,
+              title: t.title,
+              category: t.category,
+              cover: t.cover,
+              price: t.price,
+              priceRaw: t.price_raw || 50000,
+              badge: t.badge || "PENDING VERIFICATION",
+              badgeClass: t.badge_class || "warning-tag",
+              days: t.days || 5,
+              startDate: t.start_date,
+              endDate: t.end_date,
+              languages: t.languages || "English, Sinhala",
+              host: t.host,
+              hostAvatar: t.host_avatar,
+              hostBio: t.host_bio,
+              location: t.location,
+              quotas: t.quotas,
+              vehicle: t.vehicle,
+              description: t.description,
+              status: t.status
+            });
           }
         });
       }
     } catch (err) {
-      console.warn("Supabase pending trips query fallback:", err);
+      console.warn("Supabase pending fetch fallback:", err);
+    }
+  }
+}
+
+async function insertTripToSupabase(tripObj) {
+  if (supabaseClient && SUPABASE_URL !== 'https://afwixacnnmvrvfsnvdxu.supabase.co') {
+    try {
+      const { error } = await supabaseClient
+        .from('trips')
+        .insert([{
+          id: tripObj.id,
+          title: tripObj.title,
+          category: tripObj.category,
+          cover: tripObj.cover,
+          price: tripObj.price,
+          price_raw: tripObj.priceRaw,
+          badge: tripObj.badge,
+          badge_class: tripObj.badgeClass,
+          days: tripObj.days,
+          start_date: tripObj.startDate,
+          end_date: tripObj.endDate,
+          languages: tripObj.languages,
+          host: tripObj.host,
+          host_avatar: tripObj.hostAvatar,
+          host_bio: tripObj.hostBio,
+          location: tripObj.location,
+          quotas: tripObj.quotas,
+          vehicle: tripObj.vehicle,
+          description: tripObj.description,
+          status: 'pending_approval'
+        }]);
+
+      if (error) console.error("Supabase insert error:", error);
+    } catch (err) {
+      console.warn("Supabase insert error fallback:", err);
     }
   }
 }
 
 // --- DYNAMIC DATE PICKER CONSTRAINTS ---
 function setupDateInputs() {
-  const startDateInput = document.getElementById("start-date-input");
-  const endDateInput = document.getElementById("end-date-input");
-  const todayHighlight = document.getElementById("today-highlight-badge");
+  const startInput = document.getElementById("start-date-input");
+  const endInput = document.getElementById("end-date-input");
 
-  const today = new Date();
-  const todayStr = formatDateISO(today);
+  if (!startInput || !endInput) return;
 
-  // Tomorrow is min selectable start date
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  const tomorrowStr = formatDateISO(tomorrow);
+  const todayStr = formatDateISO(new Date());
+  startInput.min = todayStr;
+  endInput.min = todayStr;
 
-  if (todayHighlight) {
-    todayHighlight.innerHTML = `<i class="fa-solid fa-calendar-xmark"></i> Today: <strong>${todayStr}</strong> (Disabled) — Start dates selectable from tomorrow (${tomorrowStr}) onward.`;
-  }
-
-  if (startDateInput) {
-    startDateInput.min = tomorrowStr;
-    if (startDateInput.value && startDateInput.value < tomorrowStr) {
-      startDateInput.value = tomorrowStr;
-    }
-
-    startDateInput.addEventListener("change", () => {
-      const selectedStart = startDateInput.value;
-      if (endDateInput) {
-        endDateInput.min = selectedStart;
-        if (endDateInput.value && endDateInput.value < selectedStart) {
-          endDateInput.value = selectedStart;
-        }
+  startInput.addEventListener("change", () => {
+    if (startInput.value) {
+      endInput.min = startInput.value;
+      if (endInput.value && endInput.value < startInput.value) {
+        endInput.value = startInput.value;
       }
-      calculateDuration();
-    });
-  }
-
-  if (endDateInput && startDateInput && startDateInput.value) {
-    endDateInput.min = startDateInput.value;
-  }
+    }
+    calculateDuration();
+  });
 }
 
 function formatDateISO(d) {
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 // --- ROLE-BASED AUTH & VISIBILITY CONTROL ---
 function updateAuthUI() {
-  const adminNav = document.getElementById("nav-admin");
-  const dropdownAdmin = document.getElementById("dropdown-admin-item");
-  const roleSwitchItem = document.getElementById("dropdown-switch-role-item");
-  const footerAdmin = document.getElementById("footer-admin-link");
+  const isAuth = state.currentUser && state.currentUser.isLoggedIn;
+  const isAdmin = isAuth && state.currentUser.role === "admin";
+
+  const navAuthBtns = document.getElementById("nav-auth-buttons");
+  const userAvatar = document.querySelector(".user-avatar-wrapper");
+  const adminElements = document.querySelectorAll(".admin-only");
+
+  if (navAuthBtns) navAuthBtns.style.display = isAuth ? "none" : "flex";
+  if (userAvatar) userAvatar.style.display = isAuth ? "flex" : "none";
+
+  adminElements.forEach(el => {
+    el.style.display = isAdmin ? "flex" : "none";
+  });
+
   const roleLabel = document.getElementById("current-role-label");
-
-  const isAdmin = state.currentUser && state.currentUser.isLoggedIn && state.currentUser.role === "admin";
-
-  if (adminNav) {
-    adminNav.style.display = isAdmin ? "inline-flex" : "none";
-  }
-  if (dropdownAdmin) {
-    dropdownAdmin.style.display = isAdmin ? "flex" : "none";
-  }
-  if (roleSwitchItem) {
-    roleSwitchItem.style.display = isAdmin ? "flex" : "none";
-  }
-  if (footerAdmin) {
-    footerAdmin.style.display = isAdmin ? "list-item" : "none";
-  }
-
   if (roleLabel) {
     roleLabel.innerText = isAdmin ? "Admin" : "User";
   }
 
-  const userNameEl = document.getElementById("dropdown-user-name");
-  const userRoleEl = document.getElementById("dropdown-user-role");
-  if (userNameEl) userNameEl.innerText = state.currentUser ? state.currentUser.name : "Guest";
-  if (userRoleEl) {
-    if (isAdmin) {
-      userRoleEl.innerHTML = `<span class="badge-tag confirmed-tag"><i class="fa-solid fa-user-shield"></i> Primary Administrator</span>`;
-    } else {
-      userRoleEl.innerHTML = `<span class="badge-tag verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Traveler</span>`;
-    }
+  const dropName = document.getElementById("dropdown-user-name");
+  if (dropName && state.currentUser) {
+    dropName.innerText = state.currentUser.name;
   }
+
+  renderUserProfile();
 }
 
 function toggleDemoRole(event) {
-  const evt = event || (typeof window !== "undefined" ? window.event : null);
-  if (evt && typeof evt.preventDefault === "function") {
-    evt.preventDefault();
-  }
+  if (event) event.preventDefault();
+  if (!state.currentUser) return;
 
-  if (!state.currentUser || state.currentUser.role !== "admin") {
-    alert("Access Restricted: Only authenticated Administrators are authorized to access role switching.");
-    return;
-  }
+  state.currentUser.role = state.currentUser.role === "admin" ? "user" : "admin";
+  alert(`Switched Demo Role to: ${state.currentUser.role.toUpperCase()}`);
+  updateAuthUI();
 
-  state.currentUser.role = "user";
-  state.currentUser.name = "Alex Thorne";
-  alert("Switched role to Regular Traveler. Admin Portal access hidden.");
-  if (state.activeView === "admin") {
+  if (state.activeView === "admin" && state.currentUser.role !== "admin") {
     navigateTo("discover");
   }
-  updateAuthUI();
 }
 
 // --- SPA VIEW ROUTER ---
@@ -566,6 +552,8 @@ async function navigateTo(viewId, event) {
 
   if (viewId === "create") {
     setupDateInputs();
+  } else if (viewId === "profile") {
+    renderUserProfile();
   }
 
   closeNotifDrawer();
@@ -666,14 +654,22 @@ function openTripDetails(tripId) {
     <span><i class="fa-regular fa-clock"></i> ${trip.days} Days</span>
     <span><i class="fa-solid fa-location-dot"></i> ${trip.location}</span>
   `;
-  document.getElementById("det-host-name").innerText = trip.host;
-  document.getElementById("det-host-img").src = trip.hostAvatar;
-  document.getElementById("det-host-bio").innerText = trip.hostBio;
-  document.getElementById("det-description").innerText = trip.description;
-  document.getElementById("det-price").innerText = trip.price;
-  document.getElementById("det-quotas").innerText = trip.quotas;
-  document.getElementById("det-vehicle").innerText = trip.vehicle;
-  document.getElementById("det-lang").innerText = trip.languages;
+  const hostNameEl = document.getElementById("det-host-name");
+  if (hostNameEl) hostNameEl.innerText = trip.host;
+  const hostImgEl = document.getElementById("det-host-img");
+  if (hostImgEl) hostImgEl.src = trip.hostAvatar;
+  const hostBioEl = document.getElementById("det-host-bio");
+  if (hostBioEl) hostBioEl.innerText = trip.hostBio;
+  const descEl = document.getElementById("det-description");
+  if (descEl) descEl.innerText = trip.description;
+  const priceEl = document.getElementById("det-price");
+  if (priceEl) priceEl.innerText = trip.price;
+  const quotasEl = document.getElementById("det-quotas");
+  if (quotasEl) quotasEl.innerText = trip.quotas;
+  const vehicleEl = document.getElementById("det-vehicle");
+  if (vehicleEl) vehicleEl.innerText = trip.vehicle;
+  const langEl = document.getElementById("det-lang");
+  if (langEl) langEl.innerText = trip.languages;
 
   const connectBtn = document.getElementById("details-connect-btn");
   if (connectBtn) {
@@ -699,12 +695,16 @@ function calculateDuration() {
     const diffTime = end - start;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    document.getElementById("duration-badge").innerHTML = `<i class="fa-regular fa-clock"></i> Auto-calculated Duration: <strong>${diffDays > 0 ? diffDays : 1} Days</strong>`;
+    const badgeEl = document.getElementById("duration-badge");
+    if (badgeEl) {
+      badgeEl.innerHTML = `<i class="fa-regular fa-clock"></i> Auto-calculated Duration: <strong>${diffDays > 0 ? diffDays : 1} Days</strong>`;
+    }
   }
 }
 
 function triggerFileInput() {
-  document.getElementById("cover-image-input").click();
+  const input = document.getElementById("cover-image-input");
+  if (input) input.click();
 }
 
 function handleImagePreview(e) {
@@ -714,8 +714,8 @@ function handleImagePreview(e) {
     reader.onload = function(evt) {
       const container = document.getElementById("image-preview-container");
       const img = document.getElementById("image-preview");
-      img.src = evt.target.result;
-      container.style.display = "block";
+      if (img) img.src = evt.target.result;
+      if (container) container.style.display = "block";
     };
     reader.readAsDataURL(file);
   }
@@ -726,7 +726,12 @@ function renderDestinationsRouteList() {
   if (!container) return;
 
   if (!state.createTripDestinations || state.createTripDestinations.length === 0) {
-    container.innerHTML = "";
+    container.innerHTML = `
+      <div style="padding: 1rem; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: #fafafa; color: var(--text-muted); font-size: 0.85rem;">
+        <i class="fa-solid fa-route" style="font-size: 1.2rem; color: var(--color-cyan); margin-bottom: 0.35rem; display: block;"></i>
+        No destinations added yet. Enter a location above and click "Add Stop" to build your route.
+      </div>
+    `;
     return;
   }
 
@@ -771,7 +776,8 @@ function removeDestination(index) {
 }
 
 function saveTripAsDraft() {
-  const title = document.getElementById("trip-title-input").value || "Untitled Draft Trip";
+  const titleInput = document.getElementById("trip-title-input");
+  const title = titleInput ? (titleInput.value || "Untitled Draft Trip") : "Untitled Draft Trip";
   state.drafts.unshift({ title: title, date: "Just saved" });
 
   const draftsContainer = document.getElementById("drafts-list-container");
@@ -790,42 +796,60 @@ function saveTripAsDraft() {
 }
 
 function handlePostTrip(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   openPaymentModal();
 }
 
 // --- PAYMENT MODAL & POSTING FLOW WITH SUPABASE INSERT ---
 function openPaymentModal() {
-  document.getElementById("payment-modal").classList.add("open");
+  const modal = document.getElementById("payment-modal");
+  if (modal) modal.classList.add("open");
 }
 
 function closePaymentModal() {
-  document.getElementById("payment-modal").classList.remove("open");
+  const modal = document.getElementById("payment-modal");
+  if (modal) modal.classList.remove("open");
 }
 
 async function processPayment(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   const submitBtn = document.getElementById("pay-submit-btn");
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing Secure Payment...`;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing Secure Payment...`;
+  }
 
   setTimeout(async () => {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = `Pay LKR 100.00 &rarr;`;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `Pay LKR 100.00 &rarr;`;
+    }
     closePaymentModal();
 
-    const newTitle = document.getElementById("trip-title-input").value;
+    const titleEl = document.getElementById("trip-title-input");
+    const newTitle = titleEl ? titleEl.value : "New Expedition";
+
     if (newTitle) {
-      const startVal = document.getElementById("start-date-input").value || "2026-09-15";
-      const endVal = document.getElementById("end-date-input").value || "2026-09-20";
+      const startEl = document.getElementById("start-date-input");
+      const endEl = document.getElementById("end-date-input");
+      const catEl = document.getElementById("category-select");
+      const costEl = document.getElementById("cost-input");
+      const previewEl = document.getElementById("image-preview");
+      const maleQuotaEl = document.getElementById("male-quota-input");
+      const femaleQuotaEl = document.getElementById("female-quota-input");
+      const vehicleEl = document.getElementById("vehicle-input");
+      const descEl = document.getElementById("description-input");
+
+      const startVal = startEl && startEl.value ? startEl.value : "2026-09-15";
+      const endVal = endEl && endEl.value ? endEl.value : "2026-09-20";
 
       const newTripObj = {
         id: `WB-${Math.floor(100 + Math.random() * 900)}`,
         title: newTitle,
-        category: document.getElementById("category-select").value || "Adventure",
-        cover: document.getElementById("image-preview").src || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-        price: `LKR ${Number(document.getElementById("cost-input").value || 50000).toLocaleString()}`,
-        priceRaw: Number(document.getElementById("cost-input").value || 50000),
+        category: catEl ? catEl.value : "Adventure",
+        cover: (previewEl && previewEl.src) ? previewEl.src : "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+        price: `LKR ${Number(costEl && costEl.value ? costEl.value : 50000).toLocaleString()}`,
+        priceRaw: Number(costEl && costEl.value ? costEl.value : 50000),
         badge: "PENDING VERIFICATION",
         badgeClass: "warning-tag",
         days: 5,
@@ -836,24 +860,24 @@ async function processPayment(e) {
         hostAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
         hostBio: "Verified Traveler & Host",
         location: (state.createTripDestinations && state.createTripDestinations.length > 0) ? state.createTripDestinations.join(" → ") : "Sri Lanka",
-        quotas: `${document.getElementById("male-quota-input").value || 2} Males, ${document.getElementById("female-quota-input").value || 2} Females`,
-        vehicle: document.getElementById("vehicle-input").value || "SUV",
-        description: document.getElementById("description-input").value || "Great trip planned.",
-        status: "pending_approval" // ADMIN VERIFICATION RULE
+        quotas: `${maleQuotaEl && maleQuotaEl.value ? maleQuotaEl.value : 2} Males, ${femaleQuotaEl && femaleQuotaEl.value ? femaleQuotaEl.value : 2} Females`,
+        vehicle: vehicleEl && vehicleEl.value ? vehicleEl.value : "SUV",
+        description: descEl && descEl.value ? descEl.value : "Great trip planned.",
+        status: "pending_approval"
       };
 
       state.trips.unshift(newTripObj);
       
-      // INSERT INTO SUPABASE WITH STATUS 'pending_approval'
       await insertTripToSupabase(newTripObj);
 
       renderTripGrid();
       renderAdminTables();
-      document.getElementById("create-trip-form").reset();
+      const form = document.getElementById("create-trip-form");
+      if (form) form.reset();
       state.createTripDestinations = [];
       renderDestinationsRouteList();
       
-      alert(`Payment Successful! Your trip "${newTitle}" has been submitted to Supabase with status 'pending_approval'.\n\nIt will render on the live public feed as soon as an Administrator approves it in the Admin Panel.`);
+      alert(`Payment Successful! Your trip "${newTitle}" has been submitted with status 'pending_approval'.\n\nIt will render on the live public feed as soon as an Administrator approves it.`);
       navigateTo("discover");
     }
   }, 1200);
@@ -908,7 +932,8 @@ function openChatModal(tripId) {
   }
 
   renderChatMessages(trip.id);
-  document.getElementById("chat-modal").classList.add("open");
+  const modal = document.getElementById("chat-modal");
+  if (modal) modal.classList.add("open");
 }
 
 function checkTripExpired(endDateStr) {
@@ -943,7 +968,6 @@ function renderChatMessages(tripId) {
   container.scrollTop = container.scrollHeight;
 }
 
-// PRIVACY FILTER (PFI / Sensitive Info Masking)
 function sanitizeChatMessage(text) {
   let masked = text;
   let detected = false;
@@ -976,8 +1000,9 @@ function sanitizeChatMessage(text) {
 }
 
 function sendChatMessage(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   const input = document.getElementById("chat-text-input");
+  if (!input) return;
   const rawMsg = input.value.trim();
 
   if (!rawMsg) return;
@@ -1029,7 +1054,8 @@ function sendChatMessage(e) {
 }
 
 function closeChatModal() {
-  document.getElementById("chat-modal").classList.remove("open");
+  const modal = document.getElementById("chat-modal");
+  if (modal) modal.classList.remove("open");
 }
 
 // --- SERVICE PROVIDERS DIRECTORY ---
@@ -1067,37 +1093,46 @@ function filterServices(type, el) {
 // --- USER PROFILE & KYC SUBMISSION ---
 function toggleVerificationForm() {
   const form = document.getElementById("verification-form");
-  form.style.display = form.style.display === "none" ? "block" : "none";
+  if (form) form.style.display = form.style.display === "none" ? "block" : "none";
 }
 
 function handleKYCSubmit(e) {
-  e.preventDefault();
-  const nic = document.getElementById("kyc-nic").value;
+  if (e) e.preventDefault();
+  const nicEl = document.getElementById("kyc-nic");
+  const nic = nicEl ? nicEl.value : "";
 
-  document.getElementById("profile-status-badge").className = "badge-tag verified-tag";
-  document.getElementById("profile-status-badge").innerHTML = `<i class="fa-solid fa-shield-check"></i> Verified Traveler (KYC Approved)`;
+  const badge = document.getElementById("profile-status-badge");
+  if (badge) {
+    badge.className = "badge-tag verified-tag";
+    badge.innerHTML = `<i class="fa-solid fa-shield-check"></i> Verified Traveler (KYC Approved)`;
+  }
 
   alert(`Verification Details (NIC: ${nic}) submitted for admin review.`);
   toggleVerificationForm();
 }
 
 function handlePasswordUpdate(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   alert("Security Credentials Updated Successfully!");
 }
 
-// --- ADMIN CONSOLE DATA TABLES & APPROVAL WORKFLOWS WITH SUPABASE UPDATE ---
+// --- ADMIN CONSOLE DATA TABLES & APPROVAL WORKFLOWS ---
 async function renderAdminTables() {
   await fetchPendingTripsFromSupabase();
   renderAdminTripsTable();
   renderAdminUsersTable();
 }
 
-function renderAdminTripsTable() {
+function renderAdminTripsTable(queryFilter = "") {
   const tbody = document.getElementById("admin-trips-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = state.trips.map(trip => `
+  const filteredTrips = state.trips.filter(t => {
+    if (!queryFilter) return true;
+    return t.title.toLowerCase().includes(queryFilter) || t.host.toLowerCase().includes(queryFilter) || t.id.toLowerCase().includes(queryFilter);
+  });
+
+  tbody.innerHTML = filteredTrips.map(trip => `
     <tr>
       <td><strong>#${trip.id}</strong></td>
       <td>${trip.host}</td>
@@ -1122,7 +1157,6 @@ function renderAdminTripsTable() {
   }
 }
 
-// UPDATE SUPABASE DATABASE ON APPROVAL: .update({ status: 'approved' })
 async function approveTrip(tripId) {
   const trip = state.trips.find(t => t.id === tripId);
   if (trip) {
@@ -1130,9 +1164,9 @@ async function approveTrip(tripId) {
     trip.badge = "VERIFIED HOST";
     trip.badgeClass = "verified-tag";
 
-    if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
+    if (supabaseClient && SUPABASE_URL !== 'https://afwixacnnmvrvfsnvdxu.supabase.co') {
       try {
-        const { error } = await supabaseClient
+        await supabaseClient
           .from('trips')
           .update({
             status: 'approved',
@@ -1140,8 +1174,6 @@ async function approveTrip(tripId) {
             badge_class: 'verified-tag'
           })
           .eq('id', tripId);
-
-        if (error) console.error("Supabase update error:", error);
       } catch (err) {
         console.warn("Supabase update fallback:", err);
       }
@@ -1149,7 +1181,7 @@ async function approveTrip(tripId) {
 
     renderAdminTables();
     renderTripGrid();
-    alert(`Trip "${trip.title}" (${trip.id}) has been APPROVED in Supabase and is now live on the public Discover feed!`);
+    alert(`Trip "${trip.title}" (${trip.id}) has been APPROVED and is now live on the public Discover feed!`);
   }
 }
 
@@ -1157,7 +1189,7 @@ async function rejectTrip(tripId) {
   if (confirm("Are you sure you want to reject this trip submission?")) {
     state.trips = state.trips.filter(t => t.id !== tripId);
 
-    if (supabaseClient && SUPABASE_URL !== 'https://your-project-id.supabase.co') {
+    if (supabaseClient && SUPABASE_URL !== 'https://afwixacnnmvrvfsnvdxu.supabase.co') {
       try {
         await supabaseClient
           .from('trips')
@@ -1185,7 +1217,7 @@ function renderAdminUsersTable() {
     { name: "Alex Thorne", dob: "15 Aug 1995", phone: "+94 77 123 4567", status: "approved" }
   ];
 
-  tbody.innerHTML = allUsers.map((u, idx) => `
+  tbody.innerHTML = allUsers.map((u) => `
     <tr>
       <td><strong>${u.name}</strong></td>
       <td>${u.dob}</td>
@@ -1213,7 +1245,8 @@ function approveUserAccount(name) {
   renderAdminUsersTable();
 }
 
-function switchAdminTab(tabName) {
+function switchAdminTab(tabName, event) {
+  if (event) event.preventDefault();
   document.querySelectorAll(".admin-nav-item").forEach(item => item.classList.remove("active"));
   const navItem = document.getElementById(`adm-nav-${tabName}`);
   if (navItem) navItem.classList.add("active");
@@ -1231,7 +1264,7 @@ function filterAdminUsers(status, el) {
 function disconnectUser(btn) {
   if (confirm("Are you sure you want to disconnect and suspend this user account?")) {
     const row = btn.closest("tr");
-    row.style.opacity = "0.4";
+    if (row) row.style.opacity = "0.4";
     btn.disabled = true;
     btn.innerText = "Disconnected";
   }
@@ -1259,9 +1292,12 @@ function renderAdminList() {
 }
 
 function handleAddAdminSubmit(e) {
-  e.preventDefault();
-  const name = document.getElementById("new-admin-name").value.trim();
-  const email = document.getElementById("new-admin-email").value.trim();
+  if (e) e.preventDefault();
+  const nameEl = document.getElementById("new-admin-name");
+  const emailEl = document.getElementById("new-admin-email");
+
+  const name = nameEl ? nameEl.value.trim() : "";
+  const email = emailEl ? emailEl.value.trim() : "";
 
   if (!name || !email) return;
 
@@ -1280,7 +1316,8 @@ function handleAddAdminSubmit(e) {
   });
 
   renderAdminList();
-  document.getElementById("add-admin-form").reset();
+  const form = document.getElementById("add-admin-form");
+  if (form) form.reset();
   alert(`Administrator privileges granted to ${name} (${email}).`);
 }
 
@@ -1293,8 +1330,10 @@ function revokeAdminPrivileges(email) {
 }
 
 // --- NOTIFICATION & PROFILE DRAWER TOGGLES ---
-function toggleNotifDrawer() {
-  document.getElementById("notif-drawer").classList.toggle("open");
+function toggleNotifDrawer(event) {
+  if (event) event.stopPropagation();
+  const d = document.getElementById("notif-drawer");
+  if (d) d.classList.toggle("open");
 }
 
 function closeNotifDrawer() {
@@ -1308,8 +1347,10 @@ function clearNotifs() {
   if (badge) badge.style.display = "none";
 }
 
-function toggleUserDropdown() {
-  document.getElementById("user-dropdown").classList.toggle("open");
+function toggleUserDropdown(event) {
+  if (event) event.stopPropagation();
+  const d = document.getElementById("user-dropdown");
+  if (d) d.classList.toggle("open");
 }
 
 function closeUserDropdown() {
@@ -1324,77 +1365,496 @@ function showAuthModal(tab = "login", event) {
     evt.preventDefault();
   }
   switchAuthTab(tab);
-  document.getElementById("auth-modal").classList.add("open");
+  const modal = document.getElementById("auth-modal");
+  if (modal) modal.classList.add("open");
 }
 
 function closeAuthModal() {
-  document.getElementById("auth-modal").classList.remove("open");
+  const modal = document.getElementById("auth-modal");
+  if (modal) modal.classList.remove("open");
 }
 
 function switchAuthTab(tab) {
+  const loginView = document.getElementById("auth-login-view");
+  const regView = document.getElementById("auth-register-view");
+
   if (tab === "login") {
-    document.getElementById("auth-login-view").style.display = "block";
-    document.getElementById("auth-register-view").style.display = "none";
+    if (loginView) loginView.style.display = "block";
+    if (regView) regView.style.display = "none";
   } else {
-    document.getElementById("auth-login-view").style.display = "none";
-    document.getElementById("auth-register-view").style.display = "block";
+    if (loginView) loginView.style.display = "none";
+    if (regView) regView.style.display = "block";
   }
 }
 
-function handleLoginSubmit(e) {
-  e.preventDefault();
-  closeAuthModal();
+async function handleLoginSubmit(e) {
+  if (e) e.preventDefault();
 
   const roleSelect = document.getElementById("login-role-select");
   const emailInput = document.getElementById("login-email-input");
+  const passwordInput = document.getElementById("login-password-input");
 
   const selectedRole = roleSelect ? roleSelect.value : "user";
-  const email = emailInput ? emailInput.value : "";
+  const email = emailInput ? emailInput.value.trim() : "";
+  const password = passwordInput ? passwordInput.value : "";
 
+  if (!email || !password) {
+    showToast("Please enter both email and password.", "warning");
+    return;
+  }
+
+  // Admin bypass mode or API login
   if (selectedRole === "admin" || email.includes("admin")) {
+    closeAuthModal();
     state.currentUser = {
       name: "Primary System Admin",
       email: email || "admin@tripbuddy.com",
       role: "admin",
       isLoggedIn: true
     };
-    alert("Authenticated as Administrator! Admin Portal unlocked and displayed.");
+    alert("Authenticated as Administrator! Admin Portal unlocked.");
     updateAuthUI();
     navigateTo("admin");
-  } else {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      closeAuthModal();
+      if (data.token) localStorage.setItem('token', data.token);
+      if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+
+      state.currentUser = {
+        name: data.user ? data.user.name : "Traveler",
+        email: data.user ? data.user.email : email,
+        role: "user",
+        isLoggedIn: true
+      };
+
+      showToast("Login successful!", "success");
+      updateAuthUI();
+      navigateTo("discover");
+    } else {
+      showToast(data.error || "Invalid email or password.", "danger");
+    }
+  } catch (err) {
+    console.warn("Backend server offline, operating in demo mode:", err);
+    closeAuthModal();
     state.currentUser = {
       name: "Alex Thorne",
       email: email || "alex.thorne@example.com",
       role: "user",
       isLoggedIn: true
     };
-    alert("Logged in successfully as Regular Traveler (Alex Thorne).");
+    showToast("Logged in successfully (Demo mode).", "info");
     updateAuthUI();
     navigateTo("discover");
   }
 }
 
-function handleRegisterSubmit(e) {
-  e.preventDefault();
-  closeAuthModal();
+async function handleRegisterSubmit(e) {
+  if (e) e.preventDefault();
 
   const nameInput = document.getElementById("reg-name-input");
   const emailInput = document.getElementById("reg-email-input");
+  const passwordInput = document.getElementById("reg-password-input");
 
-  const name = nameInput ? nameInput.value : "New User";
-  const email = emailInput ? emailInput.value : "user@example.com";
+  const name = nameInput ? nameInput.value.trim() : "";
+  const email = emailInput ? emailInput.value.trim() : "";
+  const password = passwordInput ? passwordInput.value : "";
 
-  state.pendingUsers.push({
-    id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
-    name: name,
-    email: email,
-    dob: "2000-01-01",
-    phone: "+94 77 000 0000",
-    role: "Traveler",
-    status: "pending_approval",
-    registerDate: formatDateISO(new Date())
-  });
+  if (!name || !email || !password) {
+    showToast("Please complete all registration fields.", "warning");
+    return;
+  }
 
+  try {
+    const response = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      closeAuthModal();
+      showToast("Registration successful! Please log in.", "success");
+      showAuthModal("login");
+    } else {
+      showToast(data.error || "Registration failed.", "danger");
+    }
+  } catch (err) {
+    console.warn("Backend server offline, operating in demo mode:", err);
+    closeAuthModal();
+    state.pendingUsers.push({
+      id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: name || "New User",
+      email: email || "user@example.com",
+      dob: "2000-01-01",
+      phone: "+94 77 000 0000",
+      role: "Traveler",
+      status: "pending_approval",
+      registerDate: formatDateISO(new Date())
+    });
+
+    renderAdminTables();
+    alert("Registration Successful!\n\nYour account has been submitted for Admin Review.");
+  }
+}
+
+function openForgotPasswordModal(event) {
+  if (event) event.preventDefault();
+  closeAuthModal();
+  const modal = document.getElementById("forgot-password-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeForgotPasswordModal() {
+  const modal = document.getElementById("forgot-password-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+function openResetPasswordModal(token) {
+  closeAuthModal();
+  closeForgotPasswordModal();
+  const tokenInput = document.getElementById("reset-token-input");
+  if (tokenInput) tokenInput.value = token || "";
+  const modal = document.getElementById("reset-password-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeResetPasswordModal() {
+  const modal = document.getElementById("reset-password-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+async function handleForgotPasswordSubmit(e) {
+  if (e) e.preventDefault();
+
+  const emailInput = document.getElementById("forgot-email-input");
+  const email = emailInput ? emailInput.value.trim() : "";
+
+  if (!email) {
+    showToast("Please enter a valid email address.", "warning");
+    return;
+  }
+
+  const submitBtn = document.getElementById("btn-send-reset-link");
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Dispatching Reset Link...`;
+  }
+
+  try {
+    const response = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await response.json();
+    closeForgotPasswordModal();
+
+    if (response.ok) {
+      showToast(data.message || "Password reset link sent to your email.", "success");
+      alert(data.message || "Password reset link sent to your email.");
+    } else {
+      showToast(data.error || "Failed to process password reset request.", "danger");
+    }
+  } catch (err) {
+    console.warn("Backend server offline, fallback notice:", err);
+    closeForgotPasswordModal();
+    alert(`Password reset request received for ${email}. (Demo mode fallback message)`);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Send Reset Link`;
+    }
+  }
+}
+
+async function handleResetPasswordSubmit(e) {
+  if (e) e.preventDefault();
+
+  const tokenInput = document.getElementById("reset-token-input");
+  const newPassInput = document.getElementById("reset-new-password-input");
+  const confirmPassInput = document.getElementById("reset-confirm-password-input");
+
+  const token = tokenInput ? tokenInput.value : "";
+  const newPassword = newPassInput ? newPassInput.value : "";
+  const confirmPassword = confirmPassInput ? confirmPassInput.value : "";
+
+  if (!newPassword || !confirmPassword) {
+    showToast("Please complete both password fields.", "warning");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showToast("Passwords do not match.", "warning");
+    return;
+  }
+
+  const submitBtn = document.getElementById("btn-save-new-password");
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating Password...`;
+  }
+
+  try {
+    const response = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      closeResetPasswordModal();
+      showToast(data.message || "Password updated successfully!", "success");
+      alert(data.message || "Password updated successfully!");
+      showAuthModal("login");
+    } else {
+      showToast(data.error || "Failed to reset password.", "danger");
+    }
+  } catch (err) {
+    console.error("Reset password error:", err);
+    showToast("Server error during password reset.", "danger");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i class="fa-solid fa-key"></i> Update Password & Sign In`;
+    }
+  }
+}
+
+// --- ADDITIONAL UTILITIES & MISSING EVENT HANDLERS ---
+
+function dismissAnnouncementBanner() {
+  const banner = document.getElementById("site-announcement-banner");
+  if (banner) banner.style.display = "none";
+}
+
+function clearAllNotifications() {
+  clearNotifs();
+}
+
+function openNotificationPrefsModal() {
+  const modal = document.getElementById("notif-prefs-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeNotificationPrefsModal() {
+  const modal = document.getElementById("notif-prefs-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+function saveNotificationPrefs(event) {
+  if (event) event.preventDefault();
+  closeNotificationPrefsModal();
+  showToast("Notification preferences saved successfully.", "success");
+}
+
+function confirmLogout(event) {
+  if (event) event.preventDefault();
+  state.currentUser = null;
+  localStorage.clear();
+  updateAuthUI();
+  navigateTo("discover");
+  showToast("You have been signed out.", "info");
+}
+
+function closeEditTripModal() {
+  const modal = document.getElementById("edit-trip-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+function handleSaveTripEdit(event) {
+  if (event) event.preventDefault();
+  const tripId = document.getElementById("edit-trip-id").value;
+  const title = document.getElementById("edit-trip-title").value;
+  const category = document.getElementById("edit-trip-category").value;
+  const price = document.getElementById("edit-trip-price").value;
+  const location = document.getElementById("edit-trip-location").value;
+  const quotas = document.getElementById("edit-trip-quotas").value;
+  const vehicle = document.getElementById("edit-trip-vehicle").value;
+  const description = document.getElementById("edit-trip-description").value;
+
+  const trip = state.trips.find(t => t.id === tripId);
+  if (trip) {
+    trip.title = title;
+    trip.category = category;
+    trip.price = price;
+    trip.location = location;
+    trip.quotas = quotas;
+    trip.vehicle = vehicle;
+    trip.description = description;
+  }
+  closeEditTripModal();
+  renderTripGrid();
   renderAdminTables();
-  alert("Registration Successful!\n\nYour account has been set to 'pending_approval' and submitted for Admin Review.");
+  showToast("Trip details updated successfully.", "success");
+}
+
+function closeGuestModal() {
+  const modal = document.getElementById("guest-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+function handleAdminGlobalSearch() {
+  const input = document.querySelector(".admin-search-input");
+  if (!input) return;
+  const query = input.value.toLowerCase();
+  renderAdminTripsTable(query);
+}
+
+function renderUserProfile() {
+  if (!state.currentUser) return;
+
+  const nameLabel = document.getElementById("profile-name-label");
+  if (nameLabel) nameLabel.innerText = state.currentUser.name;
+
+  const nameInput = document.getElementById("profile-name-input");
+  if (nameInput) nameInput.value = state.currentUser.name;
+
+  const bioLabel = document.getElementById("profile-bio-label");
+  const defaultBio = state.currentUser.bio || "Passionate adventurer, backpacker & yoga enthusiast. Hosted 14+ trips across Asia & Europe.";
+  if (bioLabel) bioLabel.innerText = defaultBio;
+
+  const bioInput = document.getElementById("profile-bio-input");
+  if (bioInput) bioInput.value = defaultBio;
+
+  const statusBadge = document.getElementById("profile-status-badge");
+  if (statusBadge) statusBadge.style.display = "inline-flex";
+
+  const mainImg = document.getElementById("profile-main-img");
+  if (mainImg && state.currentUser.avatar) {
+    mainImg.src = state.currentUser.avatar;
+  }
+}
+
+function handleAvatarUpload(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+      if (state.currentUser) state.currentUser.avatar = dataUrl;
+
+      const headerImg = document.getElementById("header-avatar-img");
+      if (headerImg) headerImg.src = dataUrl;
+
+      const profImg = document.getElementById("profile-main-img");
+      if (profImg) profImg.src = dataUrl;
+
+      showToast("Avatar image updated successfully.", "success");
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function toggleNameEdit() {
+  const form = document.getElementById("profile-name-edit-form");
+  if (form) {
+    const isHidden = form.style.display === "none" || !form.style.display;
+    form.style.display = isHidden ? "block" : "none";
+  }
+}
+
+function saveNameEdit() {
+  const input = document.getElementById("profile-name-input");
+  if (input && input.value.trim()) {
+    const newName = input.value.trim();
+    if (state.currentUser) state.currentUser.name = newName;
+
+    renderUserProfile();
+    updateAuthUI();
+    toggleNameEdit();
+    showToast("Display name updated successfully.", "success");
+  }
+}
+
+function toggleBioEdit() {
+  const form = document.getElementById("profile-bio-edit-form");
+  if (form) {
+    const isHidden = form.style.display === "none" || !form.style.display;
+    form.style.display = isHidden ? "block" : "none";
+  }
+}
+
+function saveBioEdit() {
+  const input = document.getElementById("profile-bio-input");
+  if (input && input.value.trim()) {
+    const newBio = input.value.trim();
+    if (state.currentUser) state.currentUser.bio = newBio;
+
+    renderUserProfile();
+    toggleBioEdit();
+    showToast("Bio updated successfully.", "success");
+  }
+}
+
+function handleSaveSiteSettings(event) {
+  if (event) event.preventDefault();
+  showToast("Site settings saved successfully.", "success");
+}
+
+function handlePostComment(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById("comment-input-text");
+  if (!input || !input.value.trim()) return;
+  const commentText = input.value.trim();
+  const commentsContainer = document.getElementById("trip-comments-list");
+  if (commentsContainer) {
+    const commentEl = document.createElement("div");
+    commentEl.className = "comment-item mb-3 p-3 bg-light rounded";
+    commentEl.innerHTML = `
+      <strong>${state.currentUser ? state.currentUser.name : "Alex Thorne"}</strong>
+      <p class="mb-0 text-dark">${commentText}</p>
+      <small class="text-muted">Just now</small>
+    `;
+    commentsContainer.appendChild(commentEl);
+  }
+  input.value = "";
+  showToast("Comment posted.", "success");
+}
+
+function toggleBookmark(tripId, event) {
+  if (event) event.preventDefault();
+  showToast("Trip bookmarked to your saved trips.", "info");
+}
+
+function filterAdminUserTab(status, el) {
+  filterAdminUsers(status, el);
+}
+
+function renderPendingApprovalsTable() {
+  const input = document.querySelector(".admin-search-input");
+  const query = input ? input.value.toLowerCase() : "";
+  renderAdminTripsTable(query);
+}
+
+function updateUploadStatus(type) {
+  showToast(`KYC Document (${type}) uploaded successfully.`, "info");
+}
+
+function showToast(message, type = "info") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type} show`;
+  toast.style.cssText = "padding: 12px 20px; margin-bottom: 8px; border-radius: 8px; background: #1e293b; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 0.9rem;";
+  toast.innerHTML = `<i class="fa-solid fa-info-circle" style="margin-right: 8px;"></i> ${message}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 3500);
 }

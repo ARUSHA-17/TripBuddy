@@ -5,6 +5,8 @@
 
 // --- INITIAL DATA STORE & SUPABASE DATABASE CONFIGURATION ---
 
+const API_BASE_URL = 'https://trip-buddy-mu.vercel.app';
+
 const SUPABASE_URL = 'https://afwixacnnmvrvfsnvdxu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_eHKdCuol5Cw4gOg6OhDWpg_1up2pVMs';
 
@@ -1419,7 +1421,7 @@ async function handleLoginSubmit(e) {
   }
 
   try {
-    const response = await fetch('/api/login', {
+    const response = await fetch(`${API_BASE_URL}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -1477,7 +1479,7 @@ async function handleRegisterSubmit(e) {
   }
 
   try {
-    const response = await fetch('/api/register', {
+    const response = await fetch(`${API_BASE_URL}/api/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password })
@@ -1555,7 +1557,7 @@ async function handleForgotPasswordSubmit(e) {
   }
 
   try {
-    const response = await fetch('/api/auth/forgot-password', {
+    const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -1610,7 +1612,7 @@ async function handleResetPasswordSubmit(e) {
   }
 
   try {
-    const response = await fetch('/api/auth/reset-password', {
+    const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, newPassword })

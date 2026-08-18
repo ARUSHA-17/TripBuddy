@@ -1,3 +1,5 @@
+const API_BASE_URL = 'https://trip-buddy-mu.vercel.app';
+
 document.addEventListener('DOMContentLoaded', () => {
   const user = JSON.parse(localStorage.getItem('user'));
   const token = localStorage.getItem('token');
@@ -31,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const notes = document.getElementById('notes').value;
 
     try {
-      const response = await fetch('http://localhost:5000/api/trips', {
+      const response = await fetch(`${API_BASE_URL}/api/trips`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, destination, startDate, endDate, notes })
@@ -53,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadTrips(userId) {
   try {
-    const response = await fetch(`http://localhost:5000/api/trips/${userId}`);
+    const response = await fetch(`${API_BASE_URL}/api/trips/${userId}`);
     const trips = await response.json();
 
     const tripListDiv = document.getElementById('tripList');
@@ -87,7 +89,7 @@ async function deleteTrip(tripId) {
   if (!confirm('Are you sure you want to delete this trip?')) return;
 
   try {
-    const response = await fetch(`http://localhost:5000/api/trips/${tripId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}`, {
       method: 'DELETE'
     });
 

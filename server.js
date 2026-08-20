@@ -47,10 +47,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tripbuddy_super_secret_key';
 // Register Route
 app.post('/api/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
     
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email, and password are required.' });
+    if (!name || !email || !password || !confirmPassword) {
+      return res.status(400).json({ error: 'Name, email, password, and confirm password are required.' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: 'Passwords do not match.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -109,41 +113,35 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Transporter Helper Function
-const createTransporter = async () => {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_PASS !== 'app_password_here') {
+const createTransporter = () => {
+  const mailUser = process.env.EMAIL_USER || process.env.SMTP_USER || process.env.GMAIL_USER;
+  const mailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.GMAIL_PASS;
+  const mailHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const mailPort = Number(process.env.SMTP_PORT) || 587;
+
+  if (!mailUser || !mailPass || mailPass === 'app_password_here' || mailPass === 'your_gmail_16_digit_app_password') {
+    throw new Error('Email credentials (EMAIL_USER & EMAIL_PASS / App Password) are not configured in backend environment variables.');
+  }
+
+  if (mailHost.includes('gmail') || process.env.EMAIL_SERVICE === 'gmail') {
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: Number(process.env.SMTP_PORT) === 465,
+      service: 'gmail',
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: mailUser,
+        pass: mailPass
       }
     });
   }
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
-      }
-    });
-  } catch (err) {
-    console.warn("Ethereal test account API offline, using fallback SMTP transport:", err.message);
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER || 'test@ethereal.email',
-        pass: process.env.SMTP_PASS || 'test'
-      }
-    });
-  }
+
+  return nodemailer.createTransport({
+    host: mailHost,
+    port: mailPort,
+    secure: mailPort === 465,
+    auth: {
+      user: mailUser,
+      pass: mailPass
+    }
+  });
 };
 
 // Forgot Password Route
@@ -157,57 +155,65 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const user = await User.findOne({ email: cleanEmail });
 
-    if (user) {
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-      user.resetPasswordToken = resetTokenHash;
-      user.resetPasswordExpires = Date.now() + 3600000;
-      await user.save();
-
-      try {
-        const transporter = await createTransporter();
-
-        const protocol = req.protocol || 'http';
-        const host = req.get('host') || 'localhost:5000';
-        const resetUrl = `${protocol}://${host}/index.html?resetToken=${resetToken}`;
-
-        const mailOptions = {
-          from: process.env.SMTP_FROM || '"TripBuddy Support" <no-reply@tripbuddy.com>',
-          to: user.email,
-          subject: 'TripBuddy — Password Reset Request',
-          text: `Hello ${user.name},\n\nYou requested a password reset for your TripBuddy account.\n\nPlease click the following link to reset your password:\n${resetUrl}\n\nThis link is valid for 1 hour. If you did not request this, please ignore this email.\n\nBest regards,\nTripBuddy Team`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-              <h2 style="color: #0284c7; margin-bottom: 10px;">TripBuddy Password Reset</h2>
-              <p>Hello <strong>${user.name}</strong>,</p>
-              <p>You requested a password reset for your TripBuddy account. Click the button below to set a new password:</p>
-              <div style="text-align: center; margin: 25px 0;">
-                <a href="${resetUrl}" style="background-color: #0284c7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset My Password</a>
-              </div>
-              <p style="font-size: 0.85rem; color: #64748b;">Or copy and paste this link into your browser:<br><a href="${resetUrl}">${resetUrl}</a></p>
-              <p style="font-size: 0.85rem; color: #64748b; margin-top: 20px;">This link will expire in 1 hour. If you did not request a password reset, no action is required.</p>
-            </div>
-          `
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Password reset email dispatched via Nodemailer:', info.messageId);
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          console.log('Ethereal Mail Preview URL:', previewUrl);
-        }
-      } catch (mailErr) {
-        console.warn("Mail transport warning (reset token was saved to MongoDB Atlas):", mailErr.message);
-      }
+    if (!user) {
+      return res.status(404).json({ error: 'No account registered with this email address.' });
     }
 
-    res.status(200).json({ 
-      message: 'If an account with that email exists, a password reset link has been dispatched to your email address.' 
+    // 1. Generate secure 32-byte reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // 2. Initialize & verify Nodemailer transporter
+    let transporter;
+    try {
+      transporter = createTransporter();
+      await transporter.verify();
+    } catch (transporterErr) {
+      console.error('Mail Transporter Configuration Error:', transporterErr.message);
+      return res.status(500).json({ 
+        error: `Email server error: ${transporterErr.message}. Please verify EMAIL_USER and EMAIL_PASS (App Password) in backend environment variables.` 
+      });
+    }
+
+    // 3. Save token & 1-hour expiration timestamp in MongoDB Atlas
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = Date.now() + 3600000;
+    await user.save();
+
+    // 4. Construct reset link URL
+    const frontendUrl = process.env.FRONTEND_URL || 'https://arusha-17.github.io/TripBuddy';
+    const resetUrl = `${frontendUrl}/index.html?resetToken=${resetToken}`;
+
+    const mailUser = process.env.EMAIL_USER || process.env.SMTP_USER || process.env.GMAIL_USER;
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.EMAIL_FROM || `"TripBuddy Support" <${mailUser}>`,
+      to: user.email,
+      subject: 'TripBuddy — Password Reset Request',
+      text: `Hello ${user.name},\n\nYou requested a password reset for your TripBuddy account.\n\nPlease click the following link to reset your password:\n${resetUrl}\n\nThis link is valid for 1 hour. If you did not request this, please ignore this email.\n\nBest regards,\nTripBuddy Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #0284c7; margin-bottom: 10px;">TripBuddy Password Reset</h2>
+          <p>Hello <strong>${user.name}</strong>,</p>
+          <p>You requested a password reset for your TripBuddy account. Click the button below to set a new password:</p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${resetUrl}" style="background-color: #0284c7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset My Password</a>
+          </div>
+          <p style="font-size: 0.85rem; color: #64748b;">Or copy and paste this link into your browser:<br><a href="${resetUrl}">${resetUrl}</a></p>
+          <p style="font-size: 0.85rem; color: #64748b; margin-top: 20px;">This link will expire in 1 hour. If you did not request a password reset, no action is required.</p>
+        </div>
+      `
+    };
+
+    // 5. Send Email via Nodemailer & return success only when message is accepted by SMTP server
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset email successfully sent to', user.email, 'MessageID:', info.messageId);
+
+    return res.status(200).json({ 
+      message: `Password reset link sent successfully to ${user.email}. Please check your inbox!` 
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ error: 'Failed to process password reset request.' });
+    console.error('Forgot password endpoint error:', error);
+    return res.status(500).json({ error: `Failed to send email: ${error.message}` });
   }
 });
 
@@ -243,21 +249,51 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// --- TRIP ROUTES ---
+// --- AUTHENTICATION MIDDLEWARE ---
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') 
+    ? authHeader.split(' ')[1] 
+    : req.headers['x-auth-token'] || req.query.token;
 
-// Create Trip
-app.post('/api/trips', async (req, res) => {
+  if (!token) {
+    return res.status(401).json({ error: 'Access Denied: Authentication token required to create posts. Please log in.' });
+  }
+
   try {
-    const { userId, destination, startDate, endDate, notes } = req.body;
-    
-    const newTrip = new Trip({ userId, destination, startDate, endDate, notes });
+    const verifiedUser = jwt.verify(token, JWT_SECRET);
+    req.user = verifiedUser;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid or expired authentication token. Please log in again.' });
+  }
+};
+
+// --- TRIP / POST ROUTES ---
+
+// Create Post / Trip (Protected Route)
+const handleCreatePost = async (req, res) => {
+  try {
+    const { userId, destination, title, startDate, endDate, notes } = req.body;
+    const authorId = req.user ? req.user.id : userId;
+
+    const newTrip = new Trip({ 
+      userId: authorId || userId, 
+      destination: destination || title, 
+      startDate, 
+      endDate, 
+      notes 
+    });
     await newTrip.save();
 
-    res.status(201).json({ message: 'Trip created successfully!', trip: newTrip });
+    res.status(201).json({ message: 'Post created successfully!', post: newTrip, trip: newTrip });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
+};
+
+app.post('/api/posts', authenticateToken, handleCreatePost);
+app.post('/api/trips', authenticateToken, handleCreatePost);
 
 // Get Trips for a User
 app.get('/api/trips/:userId', async (req, res) => {

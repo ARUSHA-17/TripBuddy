@@ -206,13 +206,7 @@ let state = {
   drafts: [
     { title: "Untitled Trip to Iceland", date: "Last edited 2 days ago" }
   ],
-  currentUser: {
-    name: "Alex Thorne",
-    email: "alex.thorne@example.com",
-    role: "user", // "user" by default for normal travelers, "admin" for administrators
-    isLoggedIn: true,
-    status: "approved"
-  },
+  currentUser: null,
   pendingUsers: [
     { id: "USR-9901", name: "David Thompson", email: "david.t@example.com", dob: "05 May 1975", phone: "+44 7700 900123", role: "Traveler", status: "pending_approval", registerDate: "2026-07-29" },
     { id: "USR-9902", name: "Jessica Lee", email: "jessica.l@example.com", dob: "18 Aug 1992", phone: "+1 202 555 0128", role: "Traveler", status: "pending_approval", registerDate: "2026-07-30" }
@@ -486,15 +480,38 @@ function formatDateISO(d) {
 
 // --- ROLE-BASED AUTH & VISIBILITY CONTROL ---
 function updateAuthUI() {
-  const isAuth = state.currentUser && state.currentUser.isLoggedIn;
+  const storedUser = localStorage.getItem("user");
+  const storedToken = localStorage.getItem("token");
+
+  if (storedToken && storedUser) {
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      state.currentUser = {
+        name: parsedUser.name || "Traveler",
+        email: parsedUser.email || "",
+        role: parsedUser.role || "user",
+        isLoggedIn: true,
+        status: parsedUser.status || "approved",
+        avatar: parsedUser.avatar || null
+      };
+    } catch (e) {
+      console.warn("Failed to parse stored user from localStorage:", e);
+    }
+  } else if (!state.currentUser || !state.currentUser.isLoggedIn) {
+    state.currentUser = null;
+  }
+
+  const isAuth = Boolean(state.currentUser && state.currentUser.isLoggedIn);
   const isAdmin = isAuth && state.currentUser.role === "admin";
 
   const navAuthBtns = document.getElementById("nav-auth-buttons");
   const userAvatar = document.querySelector(".user-avatar-wrapper");
+  const notifBell = document.getElementById("notif-bell");
   const adminElements = document.querySelectorAll(".admin-only");
 
   if (navAuthBtns) navAuthBtns.style.display = isAuth ? "none" : "flex";
   if (userAvatar) userAvatar.style.display = isAuth ? "flex" : "none";
+  if (notifBell) notifBell.style.display = isAuth ? "flex" : "none";
 
   adminElements.forEach(el => {
     el.style.display = isAdmin ? "flex" : "none";
@@ -553,6 +570,13 @@ async function navigateTo(viewId, event) {
   if (activeNav) activeNav.classList.add("active");
 
   if (viewId === "create") {
+    const isAuth = Boolean(state.currentUser && state.currentUser.isLoggedIn && (localStorage.getItem("token") || state.currentUser.token));
+    if (!isAuth) {
+      showToast("Access Restricted: Please sign in or create an account to post content.", "warning");
+      openGuestModal("create new trip posts or host travel experiences");
+      showAuthModal("login");
+      return;
+    }
     setupDateInputs();
   } else if (viewId === "profile") {
     renderUserProfile();
@@ -799,6 +823,13 @@ function saveTripAsDraft() {
 
 function handlePostTrip(e) {
   if (e) e.preventDefault();
+  const isAuth = Boolean(state.currentUser && state.currentUser.isLoggedIn && (localStorage.getItem("token") || state.currentUser.token));
+  if (!isAuth) {
+    showToast("Access Restricted: Please sign in to publish trip posts.", "warning");
+    openGuestModal("create new trip posts or host travel experiences");
+    showAuthModal("login");
+    return;
+  }
   openPaymentModal();
 }
 
@@ -1468,13 +1499,21 @@ async function handleRegisterSubmit(e) {
   const nameInput = document.getElementById("reg-name-input");
   const emailInput = document.getElementById("reg-email-input");
   const passwordInput = document.getElementById("reg-password-input");
+  const confirmPasswordInput = document.getElementById("reg-confirm-password-input");
 
   const name = nameInput ? nameInput.value.trim() : "";
   const email = emailInput ? emailInput.value.trim() : "";
   const password = passwordInput ? passwordInput.value : "";
+  const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : "";
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !confirmPassword) {
     showToast("Please complete all registration fields.", "warning");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showToast("Passwords do not match.", "danger");
+    alert("Passwords do not match.");
     return;
   }
 
@@ -1482,7 +1521,7 @@ async function handleRegisterSubmit(e) {
     const response = await fetch(`${API_BASE_URL}/api/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, confirmPassword })
     });
 
     const data = await response.json();
@@ -1571,11 +1610,13 @@ async function handleForgotPasswordSubmit(e) {
       alert(data.message || "Password reset link sent to your email.");
     } else {
       showToast(data.error || "Failed to process password reset request.", "danger");
+      alert(data.error || "Failed to process password reset request.");
     }
   } catch (err) {
-    console.warn("Backend server offline, fallback notice:", err);
+    console.error("Backend server error or network issue:", err);
     closeForgotPasswordModal();
-    alert(`Password reset request received for ${email}. (Demo mode fallback message)`);
+    showToast("Unable to send reset email. Please ensure backend server is online and Nodemailer is configured.", "danger");
+    alert("Unable to send password reset email. Please check server connection and email configuration.");
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;

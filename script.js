@@ -1499,13 +1499,21 @@ async function handleRegisterSubmit(e) {
   const nameInput = document.getElementById("reg-name-input");
   const emailInput = document.getElementById("reg-email-input");
   const passwordInput = document.getElementById("reg-password-input");
+  const confirmPasswordInput = document.getElementById("reg-confirm-password-input");
 
   const name = nameInput ? nameInput.value.trim() : "";
   const email = emailInput ? emailInput.value.trim() : "";
   const password = passwordInput ? passwordInput.value : "";
+  const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : "";
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !confirmPassword) {
     showToast("Please complete all registration fields.", "warning");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showToast("Passwords do not match.", "danger");
+    alert("Passwords do not match.");
     return;
   }
 
@@ -1513,7 +1521,7 @@ async function handleRegisterSubmit(e) {
     const response = await fetch(`${API_BASE_URL}/api/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, confirmPassword })
     });
 
     const data = await response.json();

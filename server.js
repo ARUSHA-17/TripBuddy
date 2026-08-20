@@ -47,10 +47,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tripbuddy_super_secret_key';
 // Register Route
 app.post('/api/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
     
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email, and password are required.' });
+    if (!name || !email || !password || !confirmPassword) {
+      return res.status(400).json({ error: 'Name, email, password, and confirm password are required.' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: 'Passwords do not match.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();

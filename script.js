@@ -1610,11 +1610,13 @@ async function handleForgotPasswordSubmit(e) {
       alert(data.message || "Password reset link sent to your email.");
     } else {
       showToast(data.error || "Failed to process password reset request.", "danger");
+      alert(data.error || "Failed to process password reset request.");
     }
   } catch (err) {
-    console.warn("Backend server offline, fallback notice:", err);
+    console.error("Backend server error or network issue:", err);
     closeForgotPasswordModal();
-    alert(`Password reset request received for ${email}. (Demo mode fallback message)`);
+    showToast("Unable to send reset email. Please ensure backend server is online and Nodemailer is configured.", "danger");
+    alert("Unable to send password reset email. Please check server connection and email configuration.");
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;

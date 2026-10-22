@@ -1,4 +1,5 @@
-const API_BASE_URL = 'https://trip-buddy-mu.vercel.app';
+// Empty = same server that serves the page (backend/server.js)
+const API_BASE_URL = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   const user = JSON.parse(localStorage.getItem('user'));

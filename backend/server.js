@@ -4,10 +4,14 @@ const mongoose = require('mongoose');
 const crypto = require('crypto'); // built-in Node.js module, no install needed
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const User = require('./models/User');
 
 const app = express();
 app.use(express.json());
+
+// Serve the frontend from the same server, so the site and API share one URL
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ─── Database Connection ───────────────────────────────────────────────────
 mongoose

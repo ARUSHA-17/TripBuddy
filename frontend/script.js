@@ -5,7 +5,8 @@
 
 // --- INITIAL DATA STORE & SUPABASE DATABASE CONFIGURATION ---
 
-const API_BASE_URL = 'https://trip-buddy-mu.vercel.app';
+// Empty = same server that serves the page (backend/server.js)
+const API_BASE_URL = '';
 
 const SUPABASE_URL = 'https://afwixacnnmvrvfsnvdxu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_eHKdCuol5Cw4gOg6OhDWpg_1up2pVMs';
@@ -1468,17 +1469,8 @@ async function handleLoginSubmit(e) {
       showToast(data.message || data.error || "Invalid email or password.", "danger");
     }
   } catch (err) {
-    console.warn("Backend server offline, operating in demo mode:", err);
-    closeAuthModal();
-    state.currentUser = {
-      name: "Alex Thorne",
-      email: email || "alex.thorne@example.com",
-      role: "user",
-      isLoggedIn: true
-    };
-    showToast("Logged in successfully (Demo mode).", "info");
-    updateAuthUI();
-    navigateTo("discover");
+    console.error("Login request failed:", err);
+    showToast("Server unavailable. Please try again later.", "danger");
   }
 }
 
@@ -1585,7 +1577,7 @@ async function handleForgotPasswordSubmit(e) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+    const response = await fetch(`${API_BASE_URL}/api/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -1642,7 +1634,7 @@ async function handleResetPasswordSubmit(e) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+    const response = await fetch(`${API_BASE_URL}/api/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, newPassword })
